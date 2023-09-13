@@ -289,11 +289,11 @@ def get_load_balancer(name, attributes, special_attributes, default_special_attr
                 "arn": load_balancer_to_use.get("LoadBalancerArn"),
                 "dns_name": load_balancer_to_use.get("DNSName"),
                 "canonical_hosted_zone_id": load_balancer_to_use.get("CanonicalHostedZoneId"),
-                "vpc_id": load_balancer_to_use.get("vpc_id"),
+                "vpc_id": load_balancer_to_use.get("VpcId"),
                 "load_balancer_type": load_balancer_to_use.get("Type"),
                 "security_groups": load_balancer_to_use.get("SecurityGroups"),
                 "subnets": [item.get("SubnetId") for item in load_balancer_to_use.get("AvailabilityZones", [])],
-                "scheme": load_balancer_to_use.get("scheme")
+                "scheme": load_balancer_to_use.get("Scheme")
             })
             eh.add_links({"Load Balancer": gen_load_balancer_link(region, load_balancer_arn)})
 
@@ -401,11 +401,11 @@ def create_load_balancer(attributes, special_attributes, default_special_attribu
             "arn": load_balancer.get("LoadBalancerArn"),
             "dns_name": load_balancer.get("DNSName"),
             "canonical_hosted_zone_id": load_balancer.get("CanonicalHostedZoneId"),
-            "vpc_id": load_balancer.get("vpc_id"),
+            "vpc_id": load_balancer.get("VpcId"),
             "load_balancer_type": load_balancer.get("Type"),
             "security_groups": load_balancer.get("SecurityGroups"),
             "subnets": [item.get("SubnetId") for item in load_balancer.get("AvailabilityZones", [])],
-            "scheme": load_balancer.get("scheme")
+            "scheme": load_balancer.get("Scheme")
         })
 
         eh.add_links({"Load Balancer": gen_load_balancer_link(region, load_balancer.get("LoadBalancerArn"))})
