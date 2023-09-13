@@ -115,21 +115,21 @@ def lambda_handler(event, context):
         waf_fail_open_enabled = cdef.get("waf_fail_open_enabled")
 
         special_attributes = remove_none_attributes({
-            "deletion_protection.enabled": deletion_protection_enabled,
-            "load_balancing.cross_zone.enabled": load_balancing_cross_zone_enabled,
-            "access_logs.s3.enabled": access_logs_s3_enabled,
-            "access_logs.s3.bucket": access_logs_s3_bucket,
-            "access_logs.s3.prefix": access_logs_s3_prefix,
-            "ipv6.deny_all_igw_traffic": ipv6_deny_all_igw_traffic,
-            "idle_timeout.timeout_seconds": idle_timeout_timeout_seconds,
-            "routing.http.desync_mitigation_mode": routing_http_desync_mitigation_mode,
-            "routing.http.drop_invalid_header_fields.enabled": routing_http_drop_invalid_header_fields_enabled,
-            "routing.http.preserve_host_header.enabled": routing_http_preserve_host_header_enabled,
-            "routing.http.x_amzn_tls_version_and_cipher_suite.enabled": routing_http_x_amzn_tls_version_and_cipher_suite_enabled,
-            "routing.http.xff_client_port.enabled": routing_http_xff_client_port_enabled,
-            "routing.http.xff_header_processing.mode": routing_http_xff_header_processing_mode,
-            "routing.http2.enabled": routing_http2_enabled,
-            "waf.fail_open.enabled": waf_fail_open_enabled
+            "deletion_protection.enabled": str(deletion_protection_enabled).lower() if deletion_protection_enabled else deletion_protection_enabled,
+            "load_balancing.cross_zone.enabled": str(load_balancing_cross_zone_enabled).lower() if load_balancing_cross_zone_enabled else load_balancing_cross_zone_enabled,
+            "access_logs.s3.enabled": str(access_logs_s3_enabled).lower() if access_logs_s3_enabled else access_logs_s3_enabled,
+            "access_logs.s3.bucket": str(access_logs_s3_bucket) if access_logs_s3_bucket else access_logs_s3_bucket,
+            "access_logs.s3.prefix": str(access_logs_s3_prefix) if access_logs_s3_prefix else access_logs_s3_prefix,
+            "ipv6.deny_all_igw_traffic": str(ipv6_deny_all_igw_traffic) if ipv6_deny_all_igw_traffic else ipv6_deny_all_igw_traffic,
+            "idle_timeout.timeout_seconds": str(idle_timeout_timeout_seconds) if idle_timeout_timeout_seconds else idle_timeout_timeout_seconds,
+            "routing.http.desync_mitigation_mode": str(routing_http_desync_mitigation_mode) if routing_http_desync_mitigation_mode else routing_http_desync_mitigation_mode,
+            "routing.http.drop_invalid_header_fields.enabled": str(routing_http_drop_invalid_header_fields_enabled).lower() if routing_http_drop_invalid_header_fields_enabled else routing_http_drop_invalid_header_fields_enabled,
+            "routing.http.preserve_host_header.enabled": str(routing_http_preserve_host_header_enabled).lower() if routing_http_preserve_host_header_enabled else routing_http_preserve_host_header_enabled,
+            "routing.http.x_amzn_tls_version_and_cipher_suite.enabled": str(routing_http_x_amzn_tls_version_and_cipher_suite_enabled).lower() if routing_http_x_amzn_tls_version_and_cipher_suite_enabled else routing_http_x_amzn_tls_version_and_cipher_suite_enabled,
+            "routing.http.xff_client_port.enabled": str(routing_http_xff_client_port_enabled).lower() if routing_http_xff_client_port_enabled else routing_http_xff_client_port_enabled,
+            "routing.http.xff_header_processing.mode": str(routing_http_xff_header_processing_mode) if routing_http_xff_header_processing_mode else routing_http_xff_header_processing_mode,
+            "routing.http2.enabled": str(routing_http2_enabled).lower() if routing_http2_enabled else routing_http2_enabled,
+            "waf.fail_open.enabled": str(waf_fail_open_enabled).lower() if waf_fail_open_enabled else waf_fail_open_enabled
         })
 
         default_special_attributes = remove_none_attributes({
