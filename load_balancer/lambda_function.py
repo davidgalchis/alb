@@ -525,8 +525,8 @@ def check_load_balancer_create_complete():
         load_balancer_reason = None
         if response and response.get("LoadBalancers") and len(response.get("LoadBalancers")) > 0:
             load_balancer_to_use = response.get("LoadBalancers")[0]
-            load_balancer_status = load_balancer_to_use.get("Status", {}).get("Code")
-            load_balancer_reason = load_balancer_to_use.get("Status", {}).get("Reason")
+            load_balancer_status = load_balancer_to_use.get("State", {}).get("Code")
+            load_balancer_reason = load_balancer_to_use.get("State", {}).get("Reason")
             if load_balancer_status in ["active", "active_impaired"]:
                 eh.add_log(f"Load Balancer Creation Succeeded {load_balancer_reason if load_balancer_reason else ''}", response)
             elif load_balancer_status == "failed":
