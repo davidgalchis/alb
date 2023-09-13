@@ -231,6 +231,360 @@
                     }
                 }
             ]
+        },
+        "target_group": {
+            "type": "ext",
+            "displayname": "CK Elastic Load Balancing V2 Target Group",
+            "description": "Deploys an AWS ELBv2 Target Group. Target group defines targets to which a load balancer can route traffic.",
+            "cloud": "AWS",
+            "ck_plugin_tier": 3,
+            "resources": ["AWS::ElasticLoadBalancingV2::TargetGroup"],
+            "policy": {
+                "Version": "2012-10-17",
+                "Statement": [{
+                    "Sid": "Vis",
+                    "Effect": "Allow",
+                    "Action": [
+                        "elasticloadbalancing:CreateTargetGroup",
+                        "ec2:DescribeInternetGateways",
+                        "ec2:DescribeVpcs",
+                        "elasticloadbalancing:RemoveTags",
+                        "elasticloadbalancing:DescribeTargetGroupAttributes",
+                        "elasticloadbalancing:DescribeTags",
+                        "elasticloadbalancing:AddTags",
+                        "elasticloadbalancing:CreateTargetGroup",
+                        "elasticloadbalancing:DescribeTargetGroups",
+                        "elasticloadbalancing:DeleteTargetGroup",
+                        "elasticloadbalancing:ModifyTargetGroupAttributes",
+                        "elasticloadbalancing:ModifyTargetGroup",
+                        "elasticloadbalancing:RegisterTargets",
+				        "elasticloadbalancing:DeregisterTargets"
+                    ],
+                    "Resource": "*"
+                }]
+            },
+            "input": {
+                "type": "object",
+                "required_properties": ["vpc_id"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the target group."
+                    },
+                    "vpc_id": {
+                        "type": "string",
+                        "description": "The VPC ID of the target group."
+                    },
+                    "port": {
+                        "type": "integer",
+                        "description": "The port on which the targets are listening.",
+                        "default": 443,
+                        "common": true
+                    },
+                    "protocol": {
+                        "type": "string",
+                        "description": "The protocol to use for routing traffic to the targets.",
+                        "enum": ["HTTP","HTTPS","TCP","TLS","UDP","TCP_UDP","GENEVE"],
+                        "default": "HTTPS",
+                        "common": true
+                    },
+                    "protocol_version": {
+                        "type": "string",
+                        "description": "[HTTP/HTTPS protocol] The protocol version of the target group.",
+                        "enum": ["GRPC", "HTTP2", "HTTP1"],
+                        "default": "HTTP1"
+                    },
+                    "target_type": {
+                        "type": "string",
+                        "description": "The type of the targets that are registered with this target group (e.g. ip, lambda, alb, or instance)",
+                        "enum": ["instance", "ip", "lambda", "alb"],
+                        "common": true
+                    },
+                    "ip_address_type": {
+                        "type": "string",
+                        "description": "The type of IP address used for this target group.",
+                        "enum": ["ipv4", "ipv6"]
+                    },
+                    "targets": {
+                        "type": "array",
+                        "description": "The targets that this target group will route traffic to.",
+                        "common": true,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the target. If the target type of the target group is instance, specify an instance ID. If the target type is ip, specify an IP address. If the target type is lambda, specify the ARN of the Lambda function. If the target type is alb, specify the ARN of the Application Load Balancer target."
+                                },
+                                "port": {
+                                    "type": "integer", 
+                                    "description": "The port on which the target is listening."
+                                },
+                                "availability_zone": {
+                                    "type": "string", 
+                                    "description": "An Availability Zone or \"all\". This determines whether the target receives traffic from the load balancer nodes in the specified Availability Zone or from all enabled Availability Zones for the load balancer."
+                                }
+                            }
+                        }
+                    },
+                    "health_check_protocol": {
+                        "type": "string",
+                        "description": "The protocol the load balancer uses when performing health checks on targets.",
+                        "enum": ["TCP", "HTTP", "HTTPS"],
+                        "default": "HTTPS"
+                    },
+                    "health_check_port": {
+                        "type": "string",
+                        "description": "The port the load balancer uses when performing health checks on targets.",
+                        "default": "traffic-port"
+                    },
+                    "health_check_enabled": {
+                        "type": "boolean",
+                        "description": "Indicates whether health checks are enabled.",
+                        "default": true
+                    },
+                    "health_check_path": {
+                        "type": "string",
+                        "description": "The destination for health checks on the targets.",
+                        "default": "/"
+                    },
+                    "health_check_interval_seconds": {
+                        "type": "integer",
+                        "description": "The approximate amount of time, in seconds, between health checks of an individual target.",
+                        "minimum": 5,
+                        "maximum": 300,
+                        "default": 30
+                    },
+                    "health_check_timeout_seconds": {
+                        "type": "integer",
+                        "description": "The amount of time, in seconds, during which no response from a target means a failed health check.",
+                        "minimum": 2,
+                        "maximum": 120,
+                        "default": 10
+                    },
+                    "healthy_threshold_count": {
+                        "type": "integer",
+                        "description": "The number of consecutive health check successes required before considering a target healthy.",
+                        "minimum": 2,
+                        "maximum": 10,
+                        "default": 5
+                    },
+                    "unhealthy_threshold_count": {
+                        "type": "integer",
+                        "description": "The number of consecutive health check failures required before considering a target unhealthy.",
+                        "minimum": 2,
+                        "maximum": 10,
+                        "default": 2
+                    },
+                    "matcher": {
+                        "type": "object",
+                        "description": "The HTTP or gRPC codes to use when checking for a successful response from a target.",
+                        "default": {"HttpCode": "200,403"},
+                        "properties": {
+                            "HttpCode": {
+                                "type": "string"
+                            },
+                            "GrpcCode": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "tags": {
+                        "type": "object",
+                        "description": "The tags to attach to this target group",
+                        "common": true
+                    },
+                    "deregistration_delay_timeout_seconds": {
+                        "type": "integer",
+                        "description": "The VPC ID of the target group.",
+                        "default": 300,
+                        "minimum": 0,
+                        "maximum": 3600
+                    },
+                    "stickiness_enabled": {
+                        "type": "boolean",
+                        "description": "Indicates whether target stickiness is enabled.",
+                        "default": false
+                    },
+                    "stickiness_type": {
+                        "type": "string",
+                        "description": "Indicates the type of stickiness.",
+                        "default": "lb_cookie",
+                        "enum": ["lb_cookie", "app_cookie", "source_ip", "source_ip_dest_ip", "source_ip_dest_ip_proto"]
+                    },
+                    "load_balancing_cross_zone_enabled": {
+                        "type": "string",
+                        "description": "Indicates whether cross zone load balancing is enabled.",
+                        "default": "use_load_balancer_configuration",
+                        "enum": ["true", "false", "use_load_balancer_configuration"]
+                    },
+                    "target_group_health_dns_failover_minimum_healthy_targets_count": {
+                        "type": "string",
+                        "description": "The minimum number of targets that must be healthy. If the number of healthy targets is below this value, mark the zone as unhealthy in DNS, so that traffic is routed only to healthy zones.",
+                        "default": "off"
+                    },
+                    "target_group_health_dns_failover_minimum_healthy_targets_percentage": {
+                        "type": "string",
+                        "description": "The minimum percentage of targets that must be healthy. If the percentage of healthy targets is below this value, mark the zone as unhealthy in DNS, so that traffic is routed only to healthy zones.",
+                        "default": "off",
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "target_group_health_unhealthy_state_routing_minimum_healthy_targets_count": {
+                        "type": "integer",
+                        "description": "The minimum number of targets that must be healthy. If the number of healthy targets is below this value, send traffic to all targets, including unhealthy targets.",
+                        "default": 1
+                    },
+                    "target_group_health_unhealthy_state_routing_minimum_healthy_targets_percentage": {
+                        "type": "string",
+                        "description": "The minimum percentage of targets that must be healthy. If the percentage of healthy targets is below this value, send traffic to all targets, including unhealthy targets.",
+                        "default": "off",
+                        "minimum": 0,
+                        "maximum": 100
+                    },
+                    "load_balancing_algorithm_type": {
+                        "type": "string",
+                        "description": "The load balancing algorithm determines how the load balancer selects targets when routing requests.",
+                        "default": "round_robin",
+                        "enum": ["round_robin", "least_outstanding_requests"]
+                    },
+                    "slow_start_duration_seconds": {
+                        "type": "integer",
+                        "description": "The time period, in seconds, during which a newly registered target receives an increasing share of the traffic to the target group. After this time period ends, the target receives its full share of traffic.",
+                        "default": 0,
+                        "minimum": 30,
+                        "maximum": 900
+                    },
+                    "stickiness_app_cookie_cookie_name": {
+                        "type": "string",
+                        "description": "Indicates the name of the application-based cookie. Names that start with the following prefixes are not allowed: AWSALB, AWSALBAPP, and AWSALBTG; they're reserved for use by the load balancer.",
+                        "default": ""
+                    },
+                    "stickiness_app_cookie_duration_seconds": {
+                        "type": "integer",
+                        "description": "The time period, in seconds, during which requests from a client should be routed to the same target. After this time period expires, the application-based cookie is considered stale.",
+                        "default": 86400,
+                        "minimum": 1,
+                        "maximum": 604800
+                    },
+                    "stickiness_lb_cookie_duration_seconds": {
+                        "type": "integer",
+                        "description": "The time period, in seconds, during which requests from a client should be routed to the same target. After this time period expires, the load balancer-generated cookie is considered stale.",
+                        "default": 86400,
+                        "minimum": 1,
+                        "maximum": 604800
+                    },
+                    "lambda_multi_value_headers_enabled": {
+                        "type": "boolean",
+                        "description": "Indicates whether the request and response headers that are exchanged between the load balancer and the Lambda function include arrays of values or strings.",
+                        "default": false
+                    },
+                    "deregistration_delay_connection_termination_enabled": {
+                        "type": "boolean",
+                        "description": "Indicates whether the load balancer terminates connections at the end of the deregistration timeout.",
+                        "default": false
+                    },
+                    "preserve_client_ip_enabled": {
+                        "type": "boolean",
+                        "description": "Indicates whether client IP preservation is enabled.",
+                        "default": true
+                    },
+                    "proxy_protocol_v2_enabled": {
+                        "type": "boolean",
+                        "description": "Indicates whether Proxy Protocol version 2 is enabled.",
+                        "default": false
+                    },
+                    "target_failover_on_deregistration_on_unhealthy": {
+                        "type": "string",
+                        "description": "Indicates how the Gateway Load Balancer handles existing flows when a target is deregistered and/or is unhealthy.",
+                        "default": "no_rebalance"
+                    }
+                }
+            },
+            "props": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the target group."
+                },
+                "arn": {
+                    "type": "string",
+                    "description": "The ARN of the target group."
+                },
+                "vpc_id": {
+                    "type": "string",
+                    "description": "The VPC ID of the target group."
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "The port on which the targets are listening."
+                },
+                "load_balancer_arns": {
+                    "type": "array",
+                    "description": "The Amazon Resource Name (ARN) of the load balancer that routes traffic to this target group. You can use each target group with only one load balancer.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "protocol": {
+                    "type": "string",
+                    "description": "The protocol to use for routing traffic to the targets."
+                },
+                "protocol_version": {
+                    "type": "string",
+                    "description": "[HTTP/HTTPS protocol] The protocol version of the target group."
+                },
+                "target_type": {
+                    "type": "string",
+                    "description": "The type of the targets that are registered with this target group (e.g. ip, lambda, alb, or instance)"
+                },
+                "ip_address_type": {
+                    "type": "string",
+                    "description": "The type of IP address used for this target group."
+                },
+                "targets": {
+                    "type": "array",
+                    "description": "The targets that this target group will route traffic to.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "The ID of the target. If the target type of the target group is instance, specify an instance ID. If the target type is ip, specify an IP address. If the target type is lambda, specify the ARN of the Lambda function. If the target type is alb, specify the ARN of the Application Load Balancer target."
+                            },
+                            "port": {
+                                "type": "integer", 
+                                "description": "The port on which the target is listening."
+                            },
+                            "availability_zone": {
+                                "type": "string", 
+                                "description": "An Availability Zone or \"all\". This determines whether the target receives traffic from the load balancer nodes in the specified Availability Zone or from all enabled Availability Zones for the load balancer."
+                            }
+                        }
+                    }
+                }
+            },
+            "examples": [
+                {
+                    "displayname": "Application Load Balancer Target Group",
+                    "notes": "Add just a VPC ID to get a standard Application Load Balancer Target Group configuration. Default configuration is set to the IP target type, port 443, HTTPS protocol, and HTTP1 protocol type.",
+                    "definition": {
+                        "type": "&alb_target_group.target_group",
+                        "vpc_id": "vpc-examplevpcid"
+                    }
+                },
+                {
+                    "displayname": "Application Load Balancer Target Group with Tags",
+                    "notes": "Add the \"tags\" parameter with a dictionary to add tags to the target group.",
+                    "definition": {
+                        "type": "&alb_target_group.target_group",
+                        "vpc_id": "vpc-examplevpcid",
+                        "tags": {
+                            "service": "user_service",
+                            "team": "applications"
+                        }
+                    }
+                }
+            ]
         }
     }
 }
