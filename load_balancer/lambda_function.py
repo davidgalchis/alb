@@ -574,7 +574,7 @@ def set_ip_address_type(ip_address_type):
     region = eh.state["region"]
 
     try:
-        response = client.modify_load_balancer(
+        response = client.set_ip_address_type(
             LoadBalancerArn=load_balancer_arn,
             IpAddressType=ip_address_type
         )
@@ -605,7 +605,7 @@ def set_security_groups(security_groups):
     region = eh.state["region"]
 
     try:
-        response = client.modify_load_balancer(
+        response = client.set_security_groups(
             LoadBalancerArn=load_balancer_arn,
             SecurityGroups=security_groups
         )
