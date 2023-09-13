@@ -210,18 +210,20 @@
             "examples": [
                 {
                     "displayname": "Application Load Balancer",
-                    "notes": "Add just a VPC ID to get a standard Application Load Balancer Target Group configuration. Default configuration is set to the IP target type, port 443, HTTPS protocol, and HTTP1 protocol type.",
+                    "notes": "Add the subnet and security group values for your VPC for a standard Application Load Balancer configuration. Default configuration is set to be internal to a VPC with the IPV4 IP address type.",
                     "definition": {
-                        "type": "&alb_target_group.target_group",
-                        "vpc_id": "vpc-examplevpcid"
+                        "type": "&alb.load_balancer",
+                        "subnets": ["subnet-1234567890EXAMPLE", "subnet-1234567890EXAMPLE"],
+                        "security_groups": ["sg-1234567890EXAMPLE"]
                     }
                 },
                 {
-                    "displayname": "Application Load Balancer Target Group with Tags",
-                    "notes": "Add the \"tags\" parameter with a dictionary to add tags to the target group.",
+                    "displayname": "Application Load Balancer with Tags",
+                    "notes": "Add the \"tags\" parameter with a dictionary to add tags to the load balancer.",
                     "definition": {
-                        "type": "&alb_target_group.target_group",
-                        "vpc_id": "vpc-examplevpcid",
+                        "type": "&alb.load_balancer",
+                        "subnets": ["subnet-1234567890EXAMPLE", "subnet-1234567890EXAMPLE"],
+                        "security_groups": ["sg-1234567890EXAMPLE"],
                         "tags": {
                             "service": "user_service",
                             "team": "applications"
