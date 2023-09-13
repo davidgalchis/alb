@@ -84,12 +84,12 @@
                     "deletion_protection_enabled": {
                         "type": "boolean",
                         "description": "Indicates whether deletion protection is enabled.",
-                        "default": false,
+                        "default": false
                     },
                     "load_balancing_cross_zone_enabled": {
                         "type": "boolean",
                         "description": "Indicates whether cross-zone load balancing is enabled.",
-                        "default": true,
+                        "default": true
                     },
                     "access_logs_s3_enabled": {
                         "type": "boolean",
