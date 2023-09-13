@@ -228,7 +228,7 @@ def lambda_handler(event, context):
         set_tags()
         set_ip_address_type(ip_address_type)
         set_security_groups(security_groups)
-        set_subnets(subnets, ip_address_type)
+        set_subnets(subnets, ip_address_type, load_balancer_type)
         update_load_balancer_special_attributes()
         reset_load_balancer_special_attributes(default_special_attributes)
 
@@ -291,12 +291,12 @@ def get_load_balancer(name, attributes, special_attributes, default_special_attr
             
             # Set the load balancer ip address type and subnets
             if attributes.get("ip_address_type") != prev_state.get("props", {}).get("ip_address_type"):
-                # Set the load balancer security groups and ip address type
-                if attributes.get("subnets") != prev_state.get("props", {}).get("subnets"):
-                    eh.add_op("set_subnets")
                 # Set the load balancer ip address type
-                else:
-                    eh.add_op("set_ip_address_type")
+                eh.add_op("set_ip_address_type")
+            # Set the load balancer security groups (and ip address type, if network load balancer)
+            if attributes.get("subnets") != prev_state.get("props", {}).get("subnets") or \
+                (attributes.get("ip_address_type") != prev_state.get("props", {}).get("ip_address_type") and attributes["load_balancer_type"] == "network"):
+                eh.add_op("set_subnets")
             # Set the load balancer security groups
             if attributes.get("security_groups") != prev_state.get("props", {}).get("security_groups"):
                 eh.add_op("set_security_groups")
@@ -404,12 +404,12 @@ def create_load_balancer(attributes, special_attributes, default_special_attribu
 
         # Set the load balancer ip address type and subnets
         if attributes.get("ip_address_type") != prev_state.get("props", {}).get("ip_address_type"):
-            # Set the load balancer security groups and ip address type
-            if attributes.get("subnets") != prev_state.get("props", {}).get("subnets"):
-                eh.add_op("set_subnets")
             # Set the load balancer ip address type
-            else:
-                eh.add_op("set_ip_address_type")
+            eh.add_op("set_ip_address_type")
+        # Set the load balancer security groups (and ip address type, if network load balancer)
+        if attributes.get("subnets") != prev_state.get("props", {}).get("subnets") or \
+            (attributes.get("ip_address_type") != prev_state.get("props", {}).get("ip_address_type") and attributes["load_balancer_type"] == "network"):
+            eh.add_op("set_subnets")
         # Set the load balancer security groups
         if attributes.get("security_groups") != prev_state.get("props", {}).get("security_groups"):
             eh.add_op("set_security_groups")
@@ -620,16 +620,18 @@ def set_security_groups(security_groups):
         handle_common_errors(e, eh, "Error Updating Load Balancer", progress=70)
     
 @ext(handler=eh, op="set_subnets")
-def set_subnets(subnets, ip_address_type):
+def set_subnets(subnets, ip_address_type, load_balancer_type):
 
     load_balancer_arn = eh.state["load_balancer_arn"]
 
+    payload = {
+        "LoadBalancerArn": load_balancer_arn,
+        "Subnets": subnets,
+    }
+    if load_balancer_type == "network":
+        payload["IpAddressType"] = ip_address_type
     try:
-        response = client.set_subnets(
-            LoadBalancerArn=load_balancer_arn,
-            Subnets=subnets,
-            IpAddressType=ip_address_type
-        )
+        response = client.set_subnets(**payload)
 
         eh.add_log("Modified Load Balancer Subnets", response)
         
