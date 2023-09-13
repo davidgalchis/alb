@@ -163,18 +163,6 @@ def lambda_handler(event, context):
             # "CustomerOwnedIpv4Pool": customer_owned_ipv4_pool # To be added once AWS Outpost support is added
         })
 
-
-         ### ATTRIBUTES THAT CAN BE SET ON INITIAL CREATION
-        subnets = cdef.get('subnets')
-        # Removing subnet mappings for the time being to decrease complexity, since you cannot specify both subnets and subnet mappings
-        # subnet_mappings = cdef.get('subnet_mappings') # Cannot specify both subnets and subnet mappings
-        security_group_ids = cdef.get('security_group_ids')
-        scheme = cdef.get('scheme') or "internal"
-        tags = cdef.get('tags') # this is converted to a [{"Key": key, "Value": value} , ...] format
-        load_balancer_type = cdef.get('load_balancer_type') or "application"
-        ip_address_type = cdef.get('ip_address_type') or 'ipv4'
-        # customer_owned_ipv4_pool = cdef.get("customer_owned_ipv4_pool") # To be added once AWS Outpost support is added
-
         ### DECLARE STARTING POINT
         pass_back_data = event.get("pass_back_data", {}) # pass_back_data only exists if this is a RETRY
         # If a RETRY, then don't set starting point
@@ -293,7 +281,8 @@ def get_load_balancer(name, attributes, special_attributes, default_special_attr
                 "load_balancer_type": load_balancer_to_use.get("Type"),
                 "security_groups": load_balancer_to_use.get("SecurityGroups"),
                 "subnets": [item.get("SubnetId") for item in load_balancer_to_use.get("AvailabilityZones", [])],
-                "scheme": load_balancer_to_use.get("Scheme")
+                "scheme": load_balancer_to_use.get("Scheme"),
+                "ip_address_type": load_balancer_to_use.get("IpAddressType")
             })
             eh.add_links({"Load Balancer": gen_load_balancer_link(region, load_balancer_arn)})
 
@@ -405,7 +394,8 @@ def create_load_balancer(attributes, special_attributes, default_special_attribu
             "load_balancer_type": load_balancer.get("Type"),
             "security_groups": load_balancer.get("SecurityGroups"),
             "subnets": [item.get("SubnetId") for item in load_balancer.get("AvailabilityZones", [])],
-            "scheme": load_balancer.get("Scheme")
+            "scheme": load_balancer.get("Scheme"),
+            "ip_address_type": load_balancer.get("IpAddressType")
         })
 
         eh.add_links({"Load Balancer": gen_load_balancer_link(region, load_balancer.get("LoadBalancerArn"))})
