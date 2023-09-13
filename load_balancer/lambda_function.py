@@ -301,15 +301,15 @@ def get_load_balancer(name, attributes, special_attributes, default_special_attr
             ### If the load_balancer exists, then setup any followup tasks
             
             # Set the load balancer ip address type and subnets
-            if attributes.get("ip_address_type") != prev_state["props"]["ip_address_type"]:
+            if attributes.get("ip_address_type") != prev_state.get("props", {}).get("ip_address_type"):
                 # Set the load balancer security groups and ip address type
-                if attributes.get("subnets") != prev_state["props"]["subnets"]:
+                if attributes.get("subnets") != prev_state.get("props", {}).get("subnets"):
                     eh.add_op("set_subnets")
                 # Set the load balancer ip address type
                 else:
                     eh.add_op("set_ip_address_type")
             # Set the load balancer security groups
-            if attributes.get("security_groups") != prev_state["props"]["security_groups"]:
+            if attributes.get("security_groups") != prev_state.get("props", {}).get("security_groups"):
                 eh.add_op("set_security_groups")
             
             # Figure out if there are special attributes that need to be set, otherwise reset all of the special attributes that exist current on the load balancer to their original values
@@ -414,15 +414,15 @@ def create_load_balancer(attributes, special_attributes, default_special_attribu
         ### Once the load_balancer exists, then setup any followup tasks
 
         # Set the load balancer ip address type and subnets
-        if attributes.get("ip_address_type") != prev_state["props"]["ip_address_type"]:
+        if attributes.get("ip_address_type") != prev_state.get("props", {}).get("ip_address_type"):
             # Set the load balancer security groups and ip address type
-            if attributes.get("subnets") != prev_state["props"]["subnets"]:
+            if attributes.get("subnets") != prev_state.get("props", {}).get("subnets"):
                 eh.add_op("set_subnets")
             # Set the load balancer ip address type
             else:
                 eh.add_op("set_ip_address_type")
         # Set the load balancer security groups
-        if attributes.get("security_groups") != prev_state["props"]["security_groups"]:
+        if attributes.get("security_groups") != prev_state.get("props", {}).get("security_groups"):
             eh.add_op("set_security_groups")
 
         # Figure out if there are special attributes that need to be set, otherwise reset all of the special attributes that exist current on the load balancer to their original values
