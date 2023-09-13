@@ -524,7 +524,6 @@ def check_load_balancer_create_complete():
         load_balancer_status = None
         load_balancer_reason = None
         if response and response.get("LoadBalancers") and len(response.get("LoadBalancers")) > 0:
-            eh.add_log("Got Load Balancer Attributes", response)
             load_balancer_to_use = response.get("LoadBalancers")[0]
             load_balancer_status = load_balancer_to_use.get("Status", {}).get("Code")
             load_balancer_reason = load_balancer_to_use.get("Status", {}).get("Reason")
@@ -534,6 +533,7 @@ def check_load_balancer_create_complete():
                 eh.add_log("Load Balancer Creation Failed", response, is_error=True)
                 eh.perm_error(f"Load Balancer Creation Failed {load_balancer_reason if load_balancer_reason else ''}", progress=20)
             else: # it is in a "provisioning" state
+                eh.add_log("Provisioning Load Balancer", response)
                 eh.retry_error(current_epoch_time_usec_num(), progress=30, callback_sec=8)
 
         else:
