@@ -136,8 +136,8 @@ def lambda_handler(event, context):
             "deletion_protection.enabled": "false",
             "load_balancing.cross_zone.enabled": "true",
             "access_logs.s3.enabled": "false",
-            "access_logs.s3.bucket": "",
-            "access_logs.s3.prefix": "",
+            "access_logs.s3.bucket": None,
+            "access_logs.s3.prefix": None,
             "ipv6.deny_all_igw_traffic": "false",
             "idle_timeout.timeout_seconds": "60",
             "routing.http.desync_mitigation_mode": "defensive",
@@ -322,10 +322,9 @@ def get_load_balancer(name, attributes, special_attributes, default_special_attr
 
                 if special_attributes:
                     # You either use whatever is being passed in or the default. That's it. And you only care about parameters that are allowed to be set for the current setup.
-                    update_attributes = {key: (special_attributes.get(key) or default_special_attributes.get(key)) for key, current_value in current_special_attributes.items() }
-                    eh.add_state({"update_special_attributes": update_attributes})
-                    eh.add_op("update_load_balancer_special_attributes")
-
+                    update_special_attributes = remove_none_attributes({key: (special_attributes.get(key) or default_special_attributes.get(key)) for key, current_value in current_special_attributes.items() })
+                    eh.add_state({"update_special_attributes": update_special_attributes})
+                    eh.add_op("update_load_balancer_special_attributes", update_special_attributes)
                 else:
                     eh.add_state({"current_special_attributes": current_special_attributes})
                     eh.add_op("reset_load_balancer_special_attributes")
@@ -434,7 +433,7 @@ def create_load_balancer(attributes, special_attributes, default_special_attribu
 
             if special_attributes:
                 # You either use whatever is being passed in or the default. That's it. And you only care about parameters that are allowed to be set for the current setup.
-                update_special_attributes = {key: (special_attributes.get(key) or default_special_attributes.get(key)) for key, current_value in current_special_attributes.items() }
+                update_special_attributes = remove_none_attributes({key: (special_attributes.get(key) or default_special_attributes.get(key)) for key, current_value in current_special_attributes.items() })
                 eh.add_state({"update_special_attributes": update_special_attributes})
                 eh.add_op("update_load_balancer_special_attributes", update_special_attributes)
 
