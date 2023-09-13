@@ -698,7 +698,7 @@ def reset_load_balancer_special_attributes(default_special_attributes):
     load_balancer_arn = eh.state["load_balancer_arn"]
     current_special_attributes = eh.state["current_special_attributes"]
 
-    update_attributes = {key: default_special_attributes.get(key) for key in current_special_attributes}
+    update_attributes = remove_none_attributes({key: default_special_attributes.get(key) for key in current_special_attributes})
     formatted_update_attributes = [{"Key": key, "Value": value} for key, value in update_attributes.items()]
                          
     try:
