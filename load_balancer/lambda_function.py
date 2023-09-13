@@ -309,6 +309,8 @@ def get_load_balancer(name, attributes, special_attributes, default_special_attr
                 response = client.describe_load_balancer_attributes(LoadBalancerArn=load_balancer_arn)
                 eh.add_log("Got Load Balancer Special Attributes", response)
                 current_special_attributes = {item.get("Key"): item.get("Value") for item in response["Attributes"]}
+                if load_balancer_to_use.get("IpAddressType") == "ipv4":
+                    current_special_attributes.pop("ipv6.deny_all_igw_traffic", None)
 
                 if special_attributes:
                     # You either use whatever is being passed in or the default. That's it. And you only care about parameters that are allowed to be set for the current setup.
@@ -421,6 +423,8 @@ def create_load_balancer(attributes, special_attributes, default_special_attribu
             # Try to get the current special attributes
             response = client.describe_load_balancer_attributes(LoadBalancerArn=load_balancer_arn)
             current_special_attributes = {item.get("Key"): item.get("Value") for item in response["Attributes"]}
+            if load_balancer.get("IpAddressType") == "ipv4":
+                current_special_attributes.pop("ipv6.deny_all_igw_traffic", None)
 
             if special_attributes:
                 # You either use whatever is being passed in or the default. That's it. And you only care about parameters that are allowed to be set for the current setup.
