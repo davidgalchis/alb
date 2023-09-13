@@ -3,7 +3,7 @@
         "load_balancer": {
             "type": "ext",
             "displayname": "CK Elastic Load Balancing V2 Load Balancer",
-            "description": "Deploys an AWS ELBv2 Load Balancer. Target group defines targets to which a load balancer can route traffic.",
+            "description": "Deploys an AWS ELBv2 Load Balancer. Load balancers distribute traffic across multiple targets based on request attributes.",
             "cloud": "AWS",
             "ck_plugin_tier": 3,
             "resources": ["AWS::ElasticLoadBalancingV2::LoadBalancer"],
@@ -38,8 +38,12 @@
                         "common": true
                     },
                     "subnets": {
-                        "type": "string",
-                        "description": "The IDs of the public subnets. You can specify only one subnet per Availability Zone. For Application Load Balancers you must specify subnets from at least two Availability Zones.",
+                        "type": "array",
+                        "description": "The IDs of the subnets. You can specify only one subnet per Availability Zone. For Application Load Balancers you must specify subnets from at least two Availability Zones.",
+                        "items": {
+                            "type": "string",
+                            "description": "The ID of the subnet"
+                        },
                         "common": true
                     },
                     "security_groups": {
