@@ -98,11 +98,11 @@
                     },
                     "access_logs_s3_bucket": {
                         "type": "string",
-                        "description": "The name of the S3 bucket for the access logs.",
+                        "description": "The name of the S3 bucket for the access logs."
                     },
                     "access_logs_s3_prefix": {
                         "type": "string",
-                        "description": "The prefix for the location in the S3 bucket for the access logs.",
+                        "description": "The prefix for the location in the S3 bucket for the access logs."
                     },
                     "ipv6_deny_all_igw_traffic": {
                         "type": "boolean",
