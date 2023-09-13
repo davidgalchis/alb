@@ -221,6 +221,7 @@ def lambda_handler(event, context):
 
         ### CREATE CALL(S) (occasionally multiple)
         create_load_balancer(attributes, special_attributes, default_special_attributes, region, prev_state)
+        check_load_balancer_create_complete()
         
         ### UPDATE CALLS (common to have multiple)
         # You want ONE function per boto3 update call, so that retries come back to the EXACT same spot. 
@@ -384,7 +385,7 @@ def create_load_balancer(attributes, special_attributes, default_special_attribu
         load_balancer_arn = load_balancer.get("LoadBalancerArn")
 
         eh.add_log("Created Load Balancer", load_balancer)
-        eh.add_state({"load_balancer_arn": load_balancer.get("LoadBalancerArn"), "region": region})
+        eh.add_state({"load_balancer_arn": load_balancer.get("LoadBalancerArn"), "region": region, "name": load_balancer.get("LoadBalancerName")})
         eh.add_props({
             "name": load_balancer.get("LoadBalancerName"),
             "arn": load_balancer.get("LoadBalancerArn"),
@@ -397,8 +398,8 @@ def create_load_balancer(attributes, special_attributes, default_special_attribu
             "scheme": load_balancer.get("Scheme"),
             "ip_address_type": load_balancer.get("IpAddressType")
         })
-
         eh.add_links({"Load Balancer": gen_load_balancer_link(region, load_balancer.get("LoadBalancerArn"))})
+        eh.add_op("check_load_balancer_create_complete")
 
         ### Once the load_balancer exists, then setup any followup tasks
 
@@ -511,6 +512,44 @@ def create_load_balancer(attributes, special_attributes, default_special_attribu
 
     except ClientError as e:
         handle_common_errors(e, eh, "Error Creating Load Balancer", progress=20)
+
+
+@ext(handler=eh, op="check_load_balancer_create_complete")
+def check_load_balancer_create_complete():
+
+    name = eh.state["name"]
+    try:
+        response = client.describe_load_balancers(Names=[name])
+        load_balancer_to_use = None
+        load_balancer_status = None
+        load_balancer_reason = None
+        if response and response.get("LoadBalancers") and len(response.get("LoadBalancers")) > 0:
+            eh.add_log("Got Load Balancer Attributes", response)
+            load_balancer_to_use = response.get("LoadBalancers")[0]
+            load_balancer_status = load_balancer_to_use.get("Status", {}).get("Code")
+            load_balancer_reason = load_balancer_to_use.get("Status", {}).get("Reason")
+            if load_balancer_status in ["active", "active_impaired"]:
+                eh.add_log(f"Load Balancer Creation Succeeded {load_balancer_reason if load_balancer_reason else ''}", response)
+            elif load_balancer_status == "failed":
+                eh.add_log("Load Balancer Creation Failed", response, is_error=True)
+                eh.perm_error(f"Load Balancer Creation Failed {load_balancer_reason if load_balancer_reason else ''}", progress=20)
+            else: # it is in a "provisioning" state
+                eh.retry_error(current_epoch_time_usec_num(), progress=30, callback_sec=8)
+
+        else:
+            eh.add_log("Did not find load balancer")
+        # else: # If there is no load balancer and there is no exception, handle it here
+        #     eh.add_log("Load Balancer Does Not Exist", {"name": name})
+        #     eh.add_op("create_load_balancer")
+    # If there is no load balancer and there is an exception handle it here
+    except client.exceptions.LoadBalancerNotFoundException:
+        eh.add_log("Load Balancer Does Not Exist", {"name": name})
+        return 0
+    except ClientError as e:
+        print(str(e))
+        eh.add_log("Get Load Balancer Error", {"error": str(e)}, is_error=True)
+        eh.retry_error("Get Load Balancer Error", 10)
+        return 0
 
 @ext(handler=eh, op="remove_tags")
 def remove_tags():
