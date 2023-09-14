@@ -448,26 +448,24 @@ def set_tags():
 
 @ext(handler=eh, op="create_listener")
 def update_listener(attributes, region, prev_state):
-
+    modifiable_attributes = {i:attributes[i] for i in attributes if i!='Tags'}
+    modifiable_attributes["ListenerArn"] = eh.state["listener_arn"]
     try:
-        response = client.create_listener(**attributes)
+        response = client.modify_listener(**modifiable_attributes)
         listener = response.get("Listeners")[0]
         listener_arn = listener.get("ListenerArn")
-
         eh.add_log("Created Listener", listener)
-        eh.add_state({"listener_arn": listener.get("ListenerArn"), "region": region, "name": listener.get("ListenerName")})
-        eh.add_props({
-            "name": listener.get("ListenerName"),
+        existing_props = {
             "arn": listener.get("ListenerArn"),
-            "dns_name": listener.get("DNSName"),
-            "canonical_hosted_zone_id": listener.get("CanonicalHostedZoneId"),
-            "vpc_id": listener.get("VpcId"),
-            "listener_type": listener.get("Type"),
-            "security_groups": listener.get("SecurityGroups"),
-            "subnets": [item.get("SubnetId") for item in listener.get("AvailabilityZones", [])],
-            "scheme": listener.get("Scheme"),
-            "ip_address_type": listener.get("IpAddressType")
-        })
+            "load_balancer_arn": listener.get("LoadBalancerArn"),
+            "port": listener.get("Port"),
+            "protocol": listener.get("Protocol"),
+            "action_type": listener.get("DefaultActions", [{}])[0].get("Type"),
+            "target_group_arn": listener.get("DefaultActions", [{}])[0].get("TargetGroupArn"),
+            "ssl_policy": listener.get("SslPolicy"),
+            "certificate_arn": listener.get("Certificates", [{}])[0].get("CertificateArn")
+        }
+        eh.add_props(**existing_props)
         eh.add_links({"Listener": gen_listener_link(region, listener.get("ListenerArn"))})
 
         # If the load balancer does not exist, some wrong has happened. Probably don't permanently fail though, try to continue.
