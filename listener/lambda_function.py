@@ -114,9 +114,11 @@ def lambda_handler(event, context):
         elif event.get("op") == "upsert":
 
             old_load_balancer_arn = None
+            old_port = None
 
             try:
                 old_load_balancer_arn = prev_state["props"]["load_balancer_arn"]
+                old_port = prev_state["props"]["port"]
             except:
                 pass
 
@@ -124,9 +126,10 @@ def lambda_handler(event, context):
 
             # If any non-editable fields have changed, we are choosing to fail. 
             # Therefore a switchover is necessary to change un-editable values.
-            if (old_load_balancer_arn and old_load_balancer_arn != load_balancer_arn):
+            if ((old_load_balancer_arn and old_load_balancer_arn != load_balancer_arn) \
+                or (old_port and old_port != port)):
 
-                non_editable_error_message = "You may not edit the Load Balancer ARN of an existing listener. Please create a new component to get the desired configuration."
+                non_editable_error_message = "You may not edit the Load Balancer ARN or the port of an existing listener. Please create a new component to get the desired configuration."
                 eh.add_log("Cannot edit non-editable field", {"error": non_editable_error_message}, is_error=True)
                 eh.perm_error(non_editable_error_message, 10)
 
