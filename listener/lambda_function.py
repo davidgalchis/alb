@@ -217,7 +217,7 @@ def get_listener(attributes, region, prev_state):
                 current_attributes = remove_none_attributes({
                     "LoadBalancerArn": str(populated_existing_attributes.get("load_balancer_arn")) if populated_existing_attributes.get("load_balancer_arn") else populated_existing_attributes.get("load_balancer_arn"),
                     "Protocol": str(populated_existing_attributes.get("protocol")) if populated_existing_attributes.get("protocol") else str(populated_existing_attributes.get("protocol")),
-                    "Port": str(populated_existing_attributes.get("port")) if populated_existing_attributes.get("port") else str(populated_existing_attributes.get("port")),
+                    "Port": populated_existing_attributes.get("port"),
                     "SslPolicy": str(populated_existing_attributes.get("ssl_policy")) if populated_existing_attributes.get("ssl_policy") else str(populated_existing_attributes.get("ssl_policy")),
                     "Certificates": [{"CertificateArn": populated_existing_attributes.get("certificate_arn") }] if populated_existing_attributes.get("certificate_arn") else None,
                     "DefaultActions": [{
