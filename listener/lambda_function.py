@@ -451,7 +451,7 @@ def set_tags():
 
 @ext(handler=eh, op="update_listener")
 def update_listener(attributes, region, prev_state):
-    modifiable_attributes = {i:attributes[i] for i in attributes if i!='Tags'}
+    modifiable_attributes = {i:attributes[i] for i in attributes if i not in ['Tags', "LoadBalancerArn"]}
     modifiable_attributes["ListenerArn"] = eh.state["listener_arn"]
     try:
         response = client.modify_listener(**modifiable_attributes)
