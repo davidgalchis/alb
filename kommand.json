@@ -727,21 +727,23 @@
             },
             "examples": [
                 {
-                    "displayname": "Application Load Balancer",
-                    "notes": "Add the subnet and security group values for your VPC for a standard Application Load Balancer configuration. Default configuration is set to be internal to a VPC with the IPV4 IP address type.",
+                    "displayname": "Load Balancer Listener",
+                    "notes": "Reference the load balancer and target group arns the listener will be interacting with and provide a certificate arn for the custom domain to check for connection requests. Default configuration is set to use the HTTPS protocol and port 443.",
                     "definition": {
                         "type": "&alb.listener",
-                        "subnets": ["subnet-1234567890EXAMPLE", "subnet-1234567890EXAMPLE"],
-                        "security_groups": ["sg-1234567890EXAMPLE"]
+                        "certificate_arn": "arn:aws:acm:us-east-1:1234567890:certificate/CERTIFICATEIDVALUE",
+                        "load_balancer_arn": "&load_balancer:props.arn",
+                        "target_group_arn": "&target_group:props.arn"
                     }
                 },
                 {
-                    "displayname": "Application Load Balancer with Tags",
-                    "notes": "Add the \"tags\" parameter with a dictionary to add tags to the load balancer.",
+                    "displayname": "Load Balancer Listener Tags",
+                    "notes": "Add the \"tags\" parameter with a dictionary to add tags to the listener.",
                     "definition": {
                         "type": "&alb.listener",
-                        "subnets": ["subnet-1234567890EXAMPLE", "subnet-1234567890EXAMPLE"],
-                        "security_groups": ["sg-1234567890EXAMPLE"],
+                        "certificate_arn": "arn:aws:acm:us-east-1:1234567890:certificate/CERTIFICATEIDVALUE",
+                        "load_balancer_arn": "&load_balancer:props.arn",
+                        "target_group_arn": "&target_group:props.arn",
                         "tags": {
                             "service": "user_service",
                             "team": "applications"
