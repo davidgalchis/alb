@@ -212,7 +212,7 @@ def get_listener(attributes, region, prev_state):
                     "ssl_policy": listener_to_use.get("SslPolicy"),
                     "certificate_arn": listener_to_use.get("Certificates", [{}])[0].get("CertificateArn")
                 }
-                eh.add_props(**existing_props)
+                eh.add_props(existing_props)
                 eh.add_links({"Listener": gen_listener_link(region, load_balancer_arn=listener_to_use.get("LoadBalancerArn"), port=listener_to_use.get("Port"))})
 
                 ### If the listener exists, then setup any followup tasks
@@ -468,7 +468,7 @@ def update_listener(attributes, region, prev_state):
             "ssl_policy": listener.get("SslPolicy"),
             "certificate_arn": listener.get("Certificates", [{}])[0].get("CertificateArn")
         }
-        eh.add_props(**existing_props)
+        eh.add_props(existing_props)
         eh.add_links({"Listener": gen_listener_link(region, load_balancer_arn=listener.get("LoadBalancerArn"), port=listener.get("Port"))})
 
     except client.exceptions.ListenerNotFoundException as e:
