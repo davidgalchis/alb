@@ -188,7 +188,7 @@ def lambda_handler(event, context):
 def get_listener(attributes, region, prev_state):
     client = boto3.client("elbv2")
     
-    existing_listener_arn = prev_state.get("props", {}).get("listener_arn")
+    existing_listener_arn = prev_state.get("props", {}).get("arn")
 
     if existing_listener_arn:
         # Try to get the listener. If you succeed, record the props and links from the current listener
