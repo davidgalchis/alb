@@ -95,7 +95,7 @@ def lambda_handler(event, context):
         attributes = remove_none_attributes({
             "LoadBalancerArn": str(load_balancer_arn) if load_balancer_arn else load_balancer_arn,
             "Protocol": str(protocol) if protocol else protocol,
-            "Port": port,
+            "Port": int(port) if port else port,
             "SslPolicy": str(ssl_policy) if ssl_policy else ssl_policy,
             "Certificates": [{"CertificateArn": certificate_arn}] if certificate_arn else None,
             "DefaultActions": [{
@@ -217,7 +217,7 @@ def get_listener(attributes, region, prev_state):
                 current_attributes = remove_none_attributes({
                     "LoadBalancerArn": str(populated_existing_attributes.get("load_balancer_arn")) if populated_existing_attributes.get("load_balancer_arn") else populated_existing_attributes.get("load_balancer_arn"),
                     "Protocol": str(populated_existing_attributes.get("protocol")) if populated_existing_attributes.get("protocol") else str(populated_existing_attributes.get("protocol")),
-                    "Port": populated_existing_attributes.get("port"),
+                    "Port": int(populated_existing_attributes.get("port")) if populated_existing_attributes.get("port") else populated_existing_attributes.get("port"),
                     "SslPolicy": str(populated_existing_attributes.get("ssl_policy")) if populated_existing_attributes.get("ssl_policy") else str(populated_existing_attributes.get("ssl_policy")),
                     "Certificates": [{"CertificateArn": populated_existing_attributes.get("certificate_arn") }] if populated_existing_attributes.get("certificate_arn") else None,
                     "DefaultActions": [{
