@@ -457,7 +457,7 @@ def update_listener(attributes, region, prev_state):
         response = client.modify_listener(**modifiable_attributes)
         listener = response.get("Listeners")[0]
         listener_arn = listener.get("ListenerArn")
-        eh.add_log("Created Listener", listener)
+        eh.add_log("Updated Listener", listener)
         existing_props = {
             "arn": listener.get("ListenerArn"),
             "load_balancer_arn": listener.get("LoadBalancerArn"),
