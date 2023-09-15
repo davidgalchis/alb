@@ -449,7 +449,7 @@ def set_tags():
         handle_common_errors(e, eh, "Error Adding Tags", progress=90)
 
 
-@ext(handler=eh, op="create_listener")
+@ext(handler=eh, op="update_listener")
 def update_listener(attributes, region, prev_state):
     modifiable_attributes = {i:attributes[i] for i in attributes if i!='Tags'}
     modifiable_attributes["ListenerArn"] = eh.state["listener_arn"]
