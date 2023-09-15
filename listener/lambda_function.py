@@ -95,7 +95,7 @@ def lambda_handler(event, context):
         attributes = remove_none_attributes({
             "LoadBalancerArn": str(load_balancer_arn) if load_balancer_arn else load_balancer_arn,
             "Protocol": str(protocol) if protocol else protocol,
-            "Port": str(port) if port else port,
+            "Port": port,
             "SslPolicy": str(ssl_policy) if ssl_policy else ssl_policy,
             "Certificates": [{"CertificateArn": certificate_arn}] if certificate_arn else None,
             "DefaultActions": [{
