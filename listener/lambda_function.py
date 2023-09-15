@@ -210,7 +210,7 @@ def get_listener(attributes, region, prev_state):
                     "certificate_arn": listener_to_use.get("Certificates", [{}])[0].get("CertificateArn")
                 }
                 eh.add_props(**existing_props)
-                eh.add_links({"Listener": gen_listener_link(region, listener_arn)})
+                eh.add_links({"Listener": gen_listener_link(region, load_balancer_arn=listener_to_use.get("LoadBalancerArn"), port=listener_to_use.get("Port"))})
 
                 ### If the listener exists, then setup any followup tasks
                 populated_existing_attributes = remove_none_attributes(existing_props)
@@ -306,7 +306,7 @@ def create_listener(attributes, region, prev_state):
             "ssl_policy": listener.get("SslPolicy"),
             "certificate_arn": listener.get("Certificates", [{}])[0].get("CertificateArn")
         })
-        eh.add_links({"Listener": gen_listener_link(region, listener.get("ListenerArn"))})
+        eh.add_links({"Listener": gen_listener_link(region, load_balancer_arn=listener.get("LoadBalancerArn"), port=listener.get("Port"))})
 
         ### Once the listener exists, then setup any followup tasks
 
@@ -385,7 +385,7 @@ def create_listener(attributes, region, prev_state):
     except client.exceptions.TooManyTargetsException as e:
         eh.add_log("Too many Target Groups have been provided. Please provide fewer target groups.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
-    except client.exceptions.TooManyTargetsException as e:
+    except client.exceptions.TooManyActionsException as e:
         eh.add_log("Too many Actions have been specified. Please specify fewer actions", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.InvalidLoadBalancerActionException as e:
@@ -466,51 +466,62 @@ def update_listener(attributes, region, prev_state):
             "certificate_arn": listener.get("Certificates", [{}])[0].get("CertificateArn")
         }
         eh.add_props(**existing_props)
-        eh.add_links({"Listener": gen_listener_link(region, listener.get("ListenerArn"))})
+        eh.add_links({"Listener": gen_listener_link(region, load_balancer_arn=listener.get("LoadBalancerArn"), port=listener.get("Port"))})
 
-        # If the load balancer does not exist, some wrong has happened. Probably don't permanently fail though, try to continue.
-        except client.exceptions.ListenerNotFoundException:
-            eh.add_log("Listener Not Found", {"arn": listener_arn})
-            return 0
-
-    except client.exceptions.DuplicateListenerNameException as e:
-        eh.add_log(f"Listener name {attributes.get('Name')} already exists", {"error": str(e)}, is_error=True)
+    except client.exceptions.ListenerNotFoundException as e:
+        eh.add_log("Listener Does Not Exist", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.DuplicateListenerException as e:
+        eh.add_log(f"Listener already exists", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyListenersException as e:
         eh.add_log(f"AWS Quota for Listeners reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
+    except client.exceptions.TooManyCertificatesException as e:
+        eh.add_log(f"AWS Quota for Certificates per Listener reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.LoadBalancerNotFoundException as e:
+        eh.add_log("Load Balancer provided was not found.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.TargetGroupNotFoundException as e:
+        eh.add_log("Target Group provided was not found", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.TargetGroupAssociationLimitException as e:
+        eh.add_log("Limit for maximum target groups associated with a listener has been reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
     except client.exceptions.InvalidConfigurationRequestException as e:
         eh.add_log("Invalid Listener Parameters", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.IncompatibleProtocolsException as e:
+        eh.add_log("Incompatible Listener Protocol provided. The target group and listener protocols must be compatible.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.SSLPolicyNotFoundException as e:
+        eh.add_log("SSL Policy provided was not found. Please try again with a different SSL Policy.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.CertificateNotFoundException as e:
+        eh.add_log("Certificate provided was not found. Please try again with a different certificate.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.UnsupportedProtocolException as e:
+        eh.add_log("Protocol provided is not supported. Please try again with a different protocol.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.TooManyRegistrationsForTargetIdException as e:
+        eh.add_log("You have hit the limit for registrations for a target group. Please create a different target group to target.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.TooManyTargetsException as e:
+        eh.add_log("Too many Target Groups have been provided. Please provide fewer target groups.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.TooManyActionsException as e:
+        eh.add_log("Too many Actions have been specified. Please specify fewer actions", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.InvalidLoadBalancerActionException as e:
+        eh.add_log("The load balancer action specified is invalid. Please specify a valid load balancer action.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.TooManyUniqueTargetGroupsPerLoadBalancerException as e:
+        eh.add_log("AWS Quota for Target Groups per Load Balancer reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyTagsException as e:
         eh.add_log("Too Many Tags on Listener. You may have 50 tags per resource.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
-    except client.exceptions.SubnetNotFoundException as e:
-        eh.add_log("Subnet provided was not found.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.InvalidSubnetException as e:
-        eh.add_log("Invalid Subnet Provided", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.InvalidSecurityGroupException as e:
-        eh.add_log("Invalid Security Group Provided", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.InvalidSchemeException as e:
-        eh.add_log("Invalid Scheme Provided", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.DuplicateTagKeysException as e:
-        eh.add_log("Tag already exists. Please check for duplicate tags.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    # except client.exceptions.ResourceInUseException as e: # Not sure when exactly this would happen on a create. Leaving it out. 
-    #     eh.add_log("Resource is in Use.", {"error": str(e)}, is_error=True)
-    #     eh.perm_error(str(e), 20)
-    except client.exceptions.AvailabilityZoneNotSupportedException as e:
-        eh.add_log("Availbility Zone not supported for Listener. Please change your configuration to point to subnets within supported availbility zones.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.OperationNotPermittedException as e:
-        eh.add_log("The operation you are taking is not permitted. Please change your configuration and try again.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-
-
     except ClientError as e:
         handle_common_errors(e, eh, "Error Creating Listener", progress=20)
 
@@ -526,18 +537,16 @@ def delete_listener():
         eh.add_log("Listener Deleted", {"listener_arn": listener_arn})
     except client.exceptions.ResourceInUseException as e:
         handle_common_errors(e, eh, "Error Deleting Listener. Resource in Use.", progress=80)
-    except client.exceptions.OperationNotPermittedException: 
-        eh.add_log("Delete Operation Not Permitted. Please check for dependencies.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 80)
     except client.exceptions.ListenerNotFoundException:
         eh.add_log("Old Listener Doesn't Exist", {"listener_arn": listener_arn})
+        return 0
     except ClientError as e:
         handle_common_errors(e, eh, "Error Deleting Listener", progress=80)
     
 
 
 
-def gen_listener_link(region, listener_arn):
-    return f"https://{region}.console.aws.amazon.com/ec2/home?region={region}#Listener:loadBalancerArn={listener_arn}"
+def gen_listener_link(region, load_balancer_arn, port):
+    return f"https://{region}.console.aws.amazon.com/ec2/home?region={region}#ELBListenerV2:loadBalancerArn={load_balancer_arn};listenerPort={port}"
 
 
