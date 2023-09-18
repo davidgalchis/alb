@@ -751,6 +751,167 @@
                     }
                 }
             ]
+        },
+
+
+
+        "rule": {
+            "type": "ext",
+            "displayname": "CK Elastic Load Balancing V2 Listener Rule",
+            "description": "Deploys a Rule on an AWS ELBv2 Listener. Rules define conditional actions to take based on request conditions.",
+            "cloud": "AWS",
+            "ck_plugin_tier": 3,
+            "resources": ["AWS::ElasticLoadBalancingV2::ListenerRule"],
+            "policy": {
+                "Version": "2012-10-17",
+                "Statement": [{
+                    "Sid": "Vis",
+                    "Effect": "Allow",
+                    "Action": [
+                        "elasticloadbalancing:RemoveTags",
+                        "elasticloadbalancing:ModifyListener",
+                        "elasticloadbalancing:CreateListener",
+                        "elasticloadbalancing:DescribeListeners",
+                        "elasticloadbalancing:DescribeTags",
+                        "elasticloadbalancing:AddTags",
+                        "elasticloadbalancing:DeleteListener"
+                    ],
+                    "Resource": "*"
+                }]
+            },
+            "input": {
+                "type": "object",
+                "required_properties": ["load_balancer_arn", "certificate_arn", "target_group_arn"],
+                "properties": {
+                    "load_balancer_arn": {
+                        "type": "string",
+                        "description": "The Amazon Resource Name (ARN) of the load balancer that routes connections requests for the listener.",
+                        "common": true
+                    },
+                    "protocol": {
+                        "type": "string",
+                        "description": "The protocol for connections from clients to the load balancer. For Application Load Balancers, the supported protocols are HTTP and HTTPS.",
+                        "default": "HTTPS",
+                        "enum": ["HTTP","HTTPS","TCP","TLS","UDP","TCP_UDP","GENEVE"],
+                        "common": true
+                    },
+                    "port": {
+                        "type": "integer",
+                        "description": "The port on which the load balancer is listening.",
+                        "default": 443,
+                        "common": true
+                    },
+                    "tags": {
+                        "type": "object",
+                        "description": "The tags to attach to this listener",
+                        "common": true
+                    },
+                    "ssl_policy": {
+                        "type": "string",
+                        "description": "The security policy that defines which protocols and ciphers are supported. See the AWS documentation for more information: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies",
+                        "default": "ELBSecurityPolicy-TLS13-1-2-2021-06",
+                        "enum": ["ELBSecurityPolicy-TLS13-1-2-2021-06",
+                            "ELBSecurityPolicy-TLS13-1-2-Res-2021-06",
+                            "ELBSecurityPolicy-TLS13-1-2-Ext1-2021-06",
+                            "ELBSecurityPolicy-TLS13-1-2-Ext2-2021-06",
+                            "ELBSecurityPolicy-TLS13-1-1-2021-06",
+                            "ELBSecurityPolicy-TLS13-1-0-2021-06",
+                            "ELBSecurityPolicy-TLS13-1-3-2021-06",
+                            "ELBSecurityPolicy-FS-1-2-Res-2020-10",
+                            "ELBSecurityPolicy-FS-1-2-Res-2019-08",
+                            "ELBSecurityPolicy-FS-1-2-2019-08",
+                            "ELBSecurityPolicy-FS-1-1-2019-08",
+                            "ELBSecurityPolicy-FS-2018-06",
+                            "ELBSecurityPolicy-TLS-1-2-Ext-2018-06",
+                            "ELBSecurityPolicy-TLS-1-2-2017-01",
+                            "ELBSecurityPolicy-TLS-1-1-2017-01",
+                            "ELBSecurityPolicy-2016-08",
+                            "ELBSecurityPolicy-TLS-1-0-2015-04",
+                            "ELBSecurityPolicy-2015-05"]
+                    },
+                    "certificate_arn": {
+                        "type": "string",
+                        "description": "The Amazon Resource Name (ARN) of the certificate. This enables connection requests from a custom domain.",
+                        "common": true
+                    },
+                    "action_type": {
+                        "type": "forward",
+                        "description": "The type of action the listener should take when receiving a connection request.",
+                        "default": "forward",
+                        "enum": ["forward", "fixed-response", "redirect"]
+                    },
+                    "target_group_arn": {
+                        "type": "string",
+                        "description": "The Amazon Resource Name (ARN) of the target group.",
+                        "common": true
+                    }
+                }
+            },
+            "props": {
+                "arn": {
+                    "type": "string",
+                    "description": "The Amazon Resource Name (ARN) of the load balancer."
+                },
+                "load_balancer_arn": {
+                    "type": "string",
+                    "description": "The Amazon Resource Name (ARN) of the load balancer."
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "The port on which the load balancer is listening."
+                },
+                "protocol": {
+                    "type": "string",
+                    "description": "The protocol for connections from clients to the load balancer."
+                },
+                "action_type": {
+                    "type": "string",
+                    "description": "The type of action the listener should take when receiving a connection request."
+                },
+                "target_group_arn": {
+                    "type": "string",
+                    "description": "The Amazon Resource Name (ARN) of the target group."
+                },
+                "ssl_policy": {
+                    "type": "string",
+                    "description": "The security policy that defines which protocols and ciphers are supported. See the AWS documentation for more information: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies"
+                },
+                "certificate_arn": {
+                    "type": "string",
+                    "description": "Whether the load balancer IP addresses are resolvable publicly or only within a VPC."
+                },
+                "tags": {
+                    "type": "object",
+                    "description": "The tags attached to this listener."
+                }
+
+            },
+            "examples": [
+                {
+                    "displayname": "Load Balancer Listener",
+                    "notes": "Reference the load balancer and target group arns the listener will be interacting with and provide a certificate arn for the custom domain to check for connection requests. Default configuration is set to use the HTTPS protocol and port 443.",
+                    "definition": {
+                        "type": "&alb.listener",
+                        "certificate_arn": "arn:aws:acm:us-east-1:1234567890:certificate/CERTIFICATEIDVALUE",
+                        "load_balancer_arn": "&load_balancer:props.arn",
+                        "target_group_arn": "&target_group:props.arn"
+                    }
+                },
+                {
+                    "displayname": "Load Balancer Listener Tags",
+                    "notes": "Add the \"tags\" parameter with a dictionary to add tags to the listener.",
+                    "definition": {
+                        "type": "&alb.listener",
+                        "certificate_arn": "arn:aws:acm:us-east-1:1234567890:certificate/CERTIFICATEIDVALUE",
+                        "load_balancer_arn": "&load_balancer:props.arn",
+                        "target_group_arn": "&target_group:props.arn",
+                        "tags": {
+                            "service": "user_service",
+                            "team": "applications"
+                        }
+                    }
+                }
+            ]
         }
     }
 }
