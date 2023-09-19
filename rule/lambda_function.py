@@ -440,25 +440,6 @@ def create_rule(attributes, region, prev_state):
 
         ### Once the listener rule exists, then setup any followup tasks
 
-        populated_existing_attributes = remove_none_attributes(existing_props)
-        current_attributes = remove_none_attributes({
-            "ListenerArn": str(populated_existing_attributes.get("listener_arn")) if populated_existing_attributes.get("listener_arn") else populated_existing_attributes.get("listener_arn"),
-            "Priority": int(populated_existing_attributes.get("priority")) if populated_existing_attributes.get("priority") else str(populated_existing_attributes.get("priority")),
-            "Conditions": conditions_to_formatted_conditions(reformatted_conditions) if reformatted_conditions else None,
-            "Actions": [{
-                "Type": str(populated_existing_attributes.get("action_type")) if populated_existing_attributes.get("action_type") else populated_existing_attributes.get("action_type"),
-                "TargetGroupArn": str(populated_existing_attributes.get("target_group_arn")) if populated_existing_attributes.get("target_group_arn") else populated_existing_attributes.get("target_group_arn"),
-            }]
-        })
-
-        comparable_attributes = {i:attributes[i] for i in attributes if i not in ['Tags', 'Priority']}
-        comparable_current_attributes = {i:current_attributes[i] for i in current_attributes if i not in ['Tags', 'Priority']}
-        if comparable_attributes != comparable_current_attributes:
-            eh.add_op("update_rule")
-
-        if attributes.get("Priority") != current_attributes.get("Priority"):
-            eh.add_op("update_rule_priority")
-
         try:
             # Try to get the current tags
             response = client.describe_tags(ResourceArns=[rule_arn])
