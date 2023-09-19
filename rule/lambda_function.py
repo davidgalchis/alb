@@ -351,9 +351,13 @@ def get_rule(attributes, region, prev_state):
                     }]
                 })
 
-                comparable_attributes = {i:attributes[i] for i in attributes if i!='Tags'}
-                if comparable_attributes != current_attributes:
+                comparable_attributes = {i:attributes[i] for i in attributes if i not in ['Tags', 'Priority']}
+                comparable_current_attributes = {i:current_attributes[i] for i in current_attributes if i not in ['Tags', 'Priority']}
+                if comparable_attributes != comparable_current_attributes:
                     eh.add_op("update_rule")
+
+                if attributes.get("Priority") != current_attributes.get("Priority"):
+                    eh.add_op("update_rule_priority")
 
                 try:
                     # Try to get the current tags
@@ -431,7 +435,7 @@ def create_rule(attributes, region, prev_state):
         })
         eh.add_links({"Rule": gen_rule_link(region, rule_arn=rule.get("RuleArn"))})
 
-        ### Once the listener exists, then setup any followup tasks
+        ### Once the listener rule exists, then setup any followup tasks
 
         try:
             # Try to get the current tags
@@ -465,104 +469,92 @@ def create_rule(attributes, region, prev_state):
                     eh.add_op("remove_tags", list(current_tags.keys()))
 
         # If the load balancer does not exist, some wrong has happened. Probably don't permanently fail though, try to continue.
-        except client.exceptions.ListenerNotFoundException:
+        except client.exceptions.RuleNotFoundException:
             eh.add_log("Rule Not Found", {"arn": rule_arn})
             pass
 
-    except client.exceptions.DuplicateListenerException as e:
-        eh.add_log(f"Listener already exists", {"error": str(e)}, is_error=True)
+    except client.exceptions.PriorityInUseException as e:
+        eh.add_log(f"Priority {attributes.get('Priority')} assigned to this listener rule already exists", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
-    except client.exceptions.TooManyListenersException as e:
-        eh.add_log(f"AWS Quota for Listeners reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
+    except client.exceptions.TooManyTargetGroupsException as e:
+        eh.add_log(f"AWS Quota for Target Groups reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
-    except client.exceptions.TooManyCertificatesException as e:
-        eh.add_log(f"AWS Quota for Certificates per Listener reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.LoadBalancerNotFoundException as e:
-        eh.add_log("Load Balancer provided was not found.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.TargetGroupNotFoundException as e:
-        eh.add_log("Target Group provided was not found", {"error": str(e)}, is_error=True)
+    except client.exceptions.TooManyRulesException as e:
+        eh.add_log(f"AWS Quota for Rules per Listener reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TargetGroupAssociationLimitException as e:
-        eh.add_log("Limit for maximum target groups associated with a listener has been reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Too many Target Groups associated with the Rule. Please decrease the number of Target Groups associated to this Listener Rule and try again.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.ListenerNotFoundException as e:
+        eh.add_log(f"Listener provided for this Listener Rule was not found.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.TargetGroupNotFoundException as e:
+        eh.add_log(f"Target Group provided for this Listener Rule was not found.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.InvalidConfigurationRequestException as e:
-        eh.add_log("Invalid Listener Parameters", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.IncompatibleProtocolsException as e:
-        eh.add_log("Incompatible Listener Protocol provided. The target group and listener protocols must be compatible.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.SSLPolicyNotFoundException as e:
-        eh.add_log("SSL Policy provided was not found. Please try again with a different SSL Policy.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.CertificateNotFoundException as e:
-        eh.add_log("Certificate provided was not found. Please try again with a different certificate.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.UnsupportedProtocolException as e:
-        eh.add_log("Protocol provided is not supported. Please try again with a different protocol.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"The configuration provided for this Listener Rule is invalid. Please enter valid configuration and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyRegistrationsForTargetIdException as e:
-        eh.add_log("You have hit the limit for registrations for a target group. Please create a different target group to target.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Too many registrations for the Target provided. Please decrease the number of registrations for the Target and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyTargetsException as e:
-        eh.add_log("Too many Target Groups have been provided. Please provide fewer target groups.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Too many Targets provided for this Listener Rule. Please decrease the number of Targets for the Listener Rule and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyActionsException as e:
-        eh.add_log("Too many Actions have been specified. Please specify fewer actions", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Too many Actions provided for this Listener Rule. Please decrease the number of Actions for the Listener Rule and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.InvalidLoadBalancerActionException as e:
-        eh.add_log("The load balancer action specified is invalid. Please specify a valid load balancer action.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Load Balancer action specified is invalid. Please change the Load Balancer action specified and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyUniqueTargetGroupsPerLoadBalancerException as e:
-        eh.add_log("AWS Quota for Target Groups per Load Balancer reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"AWS Quota for Unique Target Groups per Load Balancer reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyTagsException as e:
-        eh.add_log("Too Many Tags on Listener. You may have 50 tags per resource.", {"error": str(e)}, is_error=True)
+        eh.add_log("Too Many Tags on Listener Rule. You may have 50 tags per resource.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except ClientError as e:
-        handle_common_errors(e, eh, "Error Creating Listener", progress=20)
+        handle_common_errors(e, eh, "Error Creating Listener Rule", progress=20)
 
 
 @ext(handler=eh, op="remove_tags")
 def remove_tags():
 
     remove_tags = eh.ops.get('remove_tags')
-    listener_arn = eh.state["listener_arn"]
+    rule_arn = eh.state["rule_arn"]
 
     try:
         response = client.remove_tags(
-            ResourceArns=[listener_arn],
+            ResourceArns=[rule_arn],
             TagKeys=remove_tags
         )
         eh.add_log("Removed Tags", remove_tags)
     except client.exceptions.ListenerNotFoundException:
-        eh.add_log("Listener Not Found", {"arn": listener_arn})
+        eh.add_log("Listener Rule Not Found", {"arn": rule_arn})
 
     except ClientError as e:
-        handle_common_errors(e, eh, "Error Removing Listener Tags", progress=90)
+        handle_common_errors(e, eh, "Error Removing Listener Rule Tags", progress=90)
 
 
 @ext(handler=eh, op="set_tags")
 def set_tags():
 
     tags = eh.ops.get("set_tags")
-    listener_arn = eh.state["listener_arn"]
+    rule_arn = eh.state["rule_arn"]
     try:
         response = client.add_tags(
-            ResourceArns=[listener_arn],
+            ResourceArns=[rule_arn],
             Tags=[{"Key": key, "Value": value} for key, value in tags.items()]
         )
         eh.add_log("Tags Added", response)
 
-    except client.exceptions.ListenerNotFoundException as e:
-        eh.add_log("Listener Not Found", {"error": str(e)}, is_error=True)
+    except client.exceptions.RuleNotFoundException as e:
+        eh.add_log("Listener Rule Not Found", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 90)
     except client.exceptions.DuplicateTagKeysException as e:
         eh.add_log(f"Duplicate Tags Found. Please remove duplicates and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 90)
     except client.exceptions.TooManyTagsException as e:
-        eh.add_log(f"Too Many Tags on Listener. You may have 50 tags per resource.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Too Many Tags on Listener Rule. You may have 50 tags per resource.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 90)
 
     except ClientError as e:
@@ -572,106 +564,95 @@ def set_tags():
 @ext(handler=eh, op="update_rule")
 def update_rule(attributes, region, prev_state):
     modifiable_attributes = {i:attributes[i] for i in attributes if i not in ['Tags', "ListenerArn"]}
-    modifiable_attributes["ListenerArn"] = eh.state["listener_arn"]
+    # modifiable_attributes["ListenerArn"] = eh.state["listener_arn"]
     try:
         response = client.modify_rule(**modifiable_attributes)
-        listener = response.get("Listeners")[0]
-        listener_arn = listener.get("ListenerArn")
-        eh.add_log("Updated Listener", listener)
+        rule = response.get("Rules")[0]
+        rule_arn = rule.get("RuleArn")
+        eh.add_log("Updated Listener Rule", rule)
         existing_props = {
-            "arn": listener.get("ListenerArn"),
-            "listener_arn": listener.get("ListenerArn"),
-            "port": listener.get("Port"),
-            "protocol": listener.get("Protocol"),
-            "action_type": listener.get("DefaultActions", [{}])[0].get("Type"),
-            "target_group_arn": listener.get("DefaultActions", [{}])[0].get("TargetGroupArn"),
-            "ssl_policy": listener.get("SslPolicy"),
-            "certificate_arn": listener.get("Certificates", [{}])[0].get("CertificateArn")
+            "arn": rule_arn,
+            "listener_arn": rule.get("ListenerArn"),
+            "conditions": formatted_conditions_to_conditions(rule.get("Conditions")),
+            "priority": rule.get("Priority"),
+            "action_type": rule.get("Actions", [{}])[0].get("Type"),
+            "target_group_arn": rule.get("Actions", [{}])[0].get("TargetGroupArn"),
         }
         eh.add_props(existing_props)
-        eh.add_links({"Rule": gen_rule_link(region, rule_arn=listener.get("RuleArn"))})
+        eh.add_links({"Rule": gen_rule_link(region, rule_arn=rule_arn)})
 
-    except client.exceptions.ListenerNotFoundException as e:
-        eh.add_log("Listener Does Not Exist", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.DuplicateListenerException as e:
-        eh.add_log(f"Listener already exists", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.TooManyListenersException as e:
-        eh.add_log(f"AWS Quota for Listeners reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.TooManyCertificatesException as e:
-        eh.add_log(f"AWS Quota for Certificates per Listener reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.LoadBalancerNotFoundException as e:
-        eh.add_log("Load Balancer provided was not found.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.TargetGroupNotFoundException as e:
-        eh.add_log("Target Group provided was not found", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
     except client.exceptions.TargetGroupAssociationLimitException as e:
-        eh.add_log("Limit for maximum target groups associated with a listener has been reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Too many Target Groups associated with the Rule. Please decrease the number of Target Groups associated to this Listener Rule and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
-    except client.exceptions.InvalidConfigurationRequestException as e:
-        eh.add_log("Invalid Listener Parameters", {"error": str(e)}, is_error=True)
+    except client.exceptions.RuleNotFoundException as e:
+        eh.add_log(f"Listener Rule Not Found", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
-    except client.exceptions.IncompatibleProtocolsException as e:
-        eh.add_log("Incompatible Listener Protocol provided. The target group and listener protocols must be compatible.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.SSLPolicyNotFoundException as e:
-        eh.add_log("SSL Policy provided was not found. Please try again with a different SSL Policy.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.CertificateNotFoundException as e:
-        eh.add_log("Certificate provided was not found. Please try again with a different certificate.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.UnsupportedProtocolException as e:
-        eh.add_log("Protocol provided is not supported. Please try again with a different protocol.", {"error": str(e)}, is_error=True)
+    except client.exceptions.RuleNotFoundException as e:
+        eh.add_log(f"The Operation specified is not permitted", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyRegistrationsForTargetIdException as e:
-        eh.add_log("You have hit the limit for registrations for a target group. Please create a different target group to target.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Too many registrations for the Target provided. Please decrease the number of registrations for the Target and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyTargetsException as e:
-        eh.add_log("Too many Target Groups have been provided. Please provide fewer target groups.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Too many Targets provided for this Listener Rule. Please decrease the number of Targets for the Listener Rule and try again.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 20)
+    except client.exceptions.TargetGroupNotFoundException as e:
+        eh.add_log(f"Target Group provided for this Listener Rule was not found.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyActionsException as e:
-        eh.add_log("Too many Actions have been specified. Please specify fewer actions", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Too many Actions provided for this Listener Rule. Please decrease the number of Actions for the Listener Rule and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.InvalidLoadBalancerActionException as e:
-        eh.add_log("The load balancer action specified is invalid. Please specify a valid load balancer action.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"Load Balancer action specified is invalid. Please change the Load Balancer action specified and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except client.exceptions.TooManyUniqueTargetGroupsPerLoadBalancerException as e:
-        eh.add_log("AWS Quota for Target Groups per Load Balancer reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
-        eh.perm_error(str(e), 20)
-    except client.exceptions.TooManyTagsException as e:
-        eh.add_log("Too Many Tags on Listener. You may have 50 tags per resource.", {"error": str(e)}, is_error=True)
+        eh.add_log(f"AWS Quota for Unique Target Groups per Load Balancer reached. Please increase your quota and try again.", {"error": str(e)}, is_error=True)
         eh.perm_error(str(e), 20)
     except ClientError as e:
-        handle_common_errors(e, eh, "Error Creating Listener", progress=20)
-
+        handle_common_errors(e, eh, "Error Creating Listener Rule", progress=20)
 
 @ext(handler=eh, op="update_rule_priority")
 def update_rule_priority(priority):
-    pass
+
+    rule_arn = eh.state["rule_arn"]
+    try:
+        response = client.set_rule_priorities(
+            RulePriorities=[
+                {
+                    'RuleArn': rule_arn,
+                    'Priority': int(priority) if priority else priority
+                },
+            ]
+        )
+        eh.add_props({"Priority": priority})
+        eh.add_log(f"Updated Listener Rule Priority")
+    except client.exceptions.RuleNotFoundException:
+        eh.add_log("Listener Rule Not Found", {"rule_arn": rule_arn})
+        eh.perm_error(str(e), 30)
+    except client.exceptions.PriorityInUseException as e:
+        eh.add_log(f"Priority {priority} assigned to this listener rule already exists", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 30)
+    except client.exceptions.OperationNotPermittedException as e:
+        eh.add_log(f"The operation of updating the priority on this listener rule is not permitted.", {"error": str(e)}, is_error=True)
+        eh.perm_error(str(e), 30)
+    except ClientError as e:
+        handle_common_errors(e, eh, "Error Updating the Listener Rule Priority", progress=80)
 
 
 @ext(handler=eh, op="delete_rule")
 def delete_rule():
-    listener_arn = eh.state["listener_arn"]
+    rule_arn = eh.state["rule_arn"]
     try:
         response = client.delete_rule(
-            ListenerArn=listener_arn
+            RuleArn=rule_arn
         )
-        eh.add_log("Listener Deleted", {"listener_arn": listener_arn})
-    except client.exceptions.ResourceInUseException as e:
-        handle_common_errors(e, eh, "Error Deleting Listener. Resource in Use.", progress=80)
-    except client.exceptions.ListenerNotFoundException:
-        eh.add_log("Old Listener Doesn't Exist", {"listener_arn": listener_arn})
+        eh.add_log("Listener Rule Deleted", {"rule_arn": rule_arn})
+    except client.exceptions.RuleNotFoundException as e:
+        eh.add_log(f"Listener Rule Not Found", {"error": str(e)}, is_error=True)
         return 0
     except ClientError as e:
-        handle_common_errors(e, eh, "Error Deleting Listener", progress=80)
+        handle_common_errors(e, eh, "Error Deleting Listener Rule", progress=80)
     
-
-
 
 def gen_rule_link(region, rule_arn):
     return f"https://{region}.console.aws.amazon.com/ec2/home?region={region}#ListenerRuleDetails:ruleArn={rule_arn}"

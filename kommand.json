@@ -752,9 +752,6 @@
                 }
             ]
         },
-
-
-
         "rule": {
             "type": "ext",
             "displayname": "CK Elastic Load Balancing V2 Listener Rule",
@@ -769,69 +766,58 @@
                     "Effect": "Allow",
                     "Action": [
                         "elasticloadbalancing:RemoveTags",
-                        "elasticloadbalancing:ModifyListener",
-                        "elasticloadbalancing:CreateListener",
-                        "elasticloadbalancing:DescribeListeners",
                         "elasticloadbalancing:DescribeTags",
+                        "elasticloadbalancing:ModifyRule",
                         "elasticloadbalancing:AddTags",
-                        "elasticloadbalancing:DeleteListener"
+                        "elasticloadbalancing:CreateRule",
+                        "elasticloadbalancing:DescribeRules",
+                        "elasticloadbalancing:SetRulePriorities",
+                        "elasticloadbalancing:DeleteRule"
                     ],
                     "Resource": "*"
                 }]
             },
             "input": {
                 "type": "object",
-                "required_properties": ["load_balancer_arn", "certificate_arn", "target_group_arn"],
+                "required_properties": ["listener_arn", "target_group_arn", "conditions", "priority"],
                 "properties": {
-                    "load_balancer_arn": {
+                    "listener_arn": {
                         "type": "string",
-                        "description": "The Amazon Resource Name (ARN) of the load balancer that routes connections requests for the listener.",
+                        "description": "The Amazon Resource Name (ARN) of the Listener this Rule is associated with.",
                         "common": true
                     },
-                    "protocol": {
+                    "target_group_arn": {
                         "type": "string",
-                        "description": "The protocol for connections from clients to the load balancer. For Application Load Balancers, the supported protocols are HTTP and HTTPS.",
-                        "default": "HTTPS",
-                        "enum": ["HTTP","HTTPS","TCP","TLS","UDP","TCP_UDP","GENEVE"],
+                        "description": "The Amazon Resource Name (ARN) of the Target Group this Rule directs traffic to.",
                         "common": true
                     },
-                    "port": {
+                    "conditions": {
+                        "type": "array",
+                        "description": "The conditions that must be met to trigger this Rule's Action(s).",
+                        "common": true,
+                        "items": {
+                            "type": "object",
+                            "required": ["field", "values"],
+                            "properties": {
+                                "field": {
+                                    "type": "string",
+                                    "description": "The field in the HTTP request that this condition applies to.",
+                                    "enum": ["http-header", "http-request-method", "host-header", "path-pattern", "query-string", "source-ip"]
+                                },
+                                "values": {
+                                    "type": "array", 
+                                    "description": "List of string values that describe the values that will match this condition for this field. If the field is \"query-string\", then this is an array of objects, with the following format: [{QUERY_STRING_PARAM: QUERY_STRING_VALUE}, ...]."
+                                },
+                                "http_header_name": {
+                                    "type": "string", 
+                                    "description": "[OPTIONAL] If the field is \"http-header\", then this field is set to the name of the header the list of provided values will match against. The maximum size is 40 characters. The header name is case insensitive. The allowed characters are specified by RFC 7230. Wildcards are not supported."
+                                }
+                            }
+                        }
+                    },
+                    "priority": {
                         "type": "integer",
-                        "description": "The port on which the load balancer is listening.",
-                        "default": 443,
-                        "common": true
-                    },
-                    "tags": {
-                        "type": "object",
-                        "description": "The tags to attach to this listener",
-                        "common": true
-                    },
-                    "ssl_policy": {
-                        "type": "string",
-                        "description": "The security policy that defines which protocols and ciphers are supported. See the AWS documentation for more information: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies",
-                        "default": "ELBSecurityPolicy-TLS13-1-2-2021-06",
-                        "enum": ["ELBSecurityPolicy-TLS13-1-2-2021-06",
-                            "ELBSecurityPolicy-TLS13-1-2-Res-2021-06",
-                            "ELBSecurityPolicy-TLS13-1-2-Ext1-2021-06",
-                            "ELBSecurityPolicy-TLS13-1-2-Ext2-2021-06",
-                            "ELBSecurityPolicy-TLS13-1-1-2021-06",
-                            "ELBSecurityPolicy-TLS13-1-0-2021-06",
-                            "ELBSecurityPolicy-TLS13-1-3-2021-06",
-                            "ELBSecurityPolicy-FS-1-2-Res-2020-10",
-                            "ELBSecurityPolicy-FS-1-2-Res-2019-08",
-                            "ELBSecurityPolicy-FS-1-2-2019-08",
-                            "ELBSecurityPolicy-FS-1-1-2019-08",
-                            "ELBSecurityPolicy-FS-2018-06",
-                            "ELBSecurityPolicy-TLS-1-2-Ext-2018-06",
-                            "ELBSecurityPolicy-TLS-1-2-2017-01",
-                            "ELBSecurityPolicy-TLS-1-1-2017-01",
-                            "ELBSecurityPolicy-2016-08",
-                            "ELBSecurityPolicy-TLS-1-0-2015-04",
-                            "ELBSecurityPolicy-2015-05"]
-                    },
-                    "certificate_arn": {
-                        "type": "string",
-                        "description": "The Amazon Resource Name (ARN) of the certificate. This enables connection requests from a custom domain.",
+                        "description": "The rule priority for this listener. A listener can not have multiple rules with the same priority.",
                         "common": true
                     },
                     "action_type": {
@@ -840,9 +826,9 @@
                         "default": "forward",
                         "enum": ["forward", "fixed-response", "redirect"]
                     },
-                    "target_group_arn": {
-                        "type": "string",
-                        "description": "The Amazon Resource Name (ARN) of the target group.",
+                    "tags": {
+                        "type": "object",
+                        "description": "The tags to attach to this target group",
                         "common": true
                     }
                 }
@@ -852,37 +838,29 @@
                     "type": "string",
                     "description": "The Amazon Resource Name (ARN) of the load balancer."
                 },
-                "load_balancer_arn": {
+                "listener_arn": {
                     "type": "string",
-                    "description": "The Amazon Resource Name (ARN) of the load balancer."
+                    "description": "The Amazon Resource Name (ARN) of the Listener this Rule is associated with."
                 },
-                "port": {
+                "priority": {
                     "type": "integer",
-                    "description": "The port on which the load balancer is listening."
+                    "description": "The rule priority for this listener. A listener can not have multiple rules with the same priority."
                 },
-                "protocol": {
-                    "type": "string",
-                    "description": "The protocol for connections from clients to the load balancer."
+                "conditions": {
+                    "type": "array",
+                    "description": "The conditions that must be met to trigger this Rule's Action(s)."
                 },
                 "action_type": {
                     "type": "string",
-                    "description": "The type of action the listener should take when receiving a connection request."
+                    "description": "The type of action the listener rule should take when receiving a connection request."
                 },
                 "target_group_arn": {
                     "type": "string",
-                    "description": "The Amazon Resource Name (ARN) of the target group."
-                },
-                "ssl_policy": {
-                    "type": "string",
-                    "description": "The security policy that defines which protocols and ciphers are supported. See the AWS documentation for more information: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies"
-                },
-                "certificate_arn": {
-                    "type": "string",
-                    "description": "Whether the load balancer IP addresses are resolvable publicly or only within a VPC."
+                    "description": "The Amazon Resource Name (ARN) of the target group the listener rule is directing traffic to."
                 },
                 "tags": {
                     "type": "object",
-                    "description": "The tags attached to this listener."
+                    "description": "The tags attached to this listener rule."
                 }
 
             },
