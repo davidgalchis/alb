@@ -428,8 +428,8 @@ def create_rule(attributes, region, prev_state):
         eh.add_log("Created Listener Rule", rule)
         eh.add_state({"rule_arn": rule.get("RuleArn"), "region": region})
         props_to_add = {
-            "arn": rule.get("ListenerArn"),
-            "listener_arn": rule.get("ListenerArn"),
+            "arn": rule.get("RuleArn"),
+            "listener_arn": attributes.get("ListenerArn"),
             "conditions": formatted_conditions_to_conditions(rule.get("Conditions")),
             "priority": rule.get("Priority"),
             "action_type": rule.get("Actions", [{}])[0].get("Type"),
@@ -577,7 +577,7 @@ def update_rule(attributes, region, prev_state):
         eh.add_log("Updated Listener Rule", rule)
         existing_props = {
             "arn": rule_arn,
-            "listener_arn": rule.get("ListenerArn"),
+            "listener_arn": attributes.get("ListenerArn"),
             "conditions": formatted_conditions_to_conditions(rule.get("Conditions")),
             "priority": rule.get("Priority"),
             "action_type": rule.get("Actions", [{}])[0].get("Type"),
