@@ -818,7 +818,9 @@
                     "priority": {
                         "type": "integer",
                         "description": "The rule priority for this listener. A listener can not have multiple rules with the same priority.",
-                        "common": true
+                        "common": true,
+                        "maximum": 50000,
+                        "minimum": 1
                     },
                     "action_type": {
                         "type": "forward",
@@ -866,26 +868,73 @@
             },
             "examples": [
                 {
-                    "displayname": "Load Balancer Listener",
-                    "notes": "Reference the load balancer and target group arns the listener will be interacting with and provide a certificate arn for the custom domain to check for connection requests. Default configuration is set to use the HTTPS protocol and port 443.",
+                    "displayname": "Listener Rule Checking the Version Header",
+                    "notes": "Reference the load balancer listener the rule will be attached to and target group the listener will send traffic to when the rule matches. Name is set with the name tag. Default configuration is set to forward traffic to the target group provided.",
                     "definition": {
-                        "type": "&alb.listener",
-                        "certificate_arn": "arn:aws:acm:us-east-1:1234567890:certificate/CERTIFICATEIDVALUE",
-                        "load_balancer_arn": "&load_balancer:props.arn",
-                        "target_group_arn": "&target_group:props.arn"
+                        "type": "&alb.rule",
+                        "target_group_arn": "&target_group:props.arn",
+                        "listener_arn": "&listener:props.arn",
+                        "priority": 8,
+                        "conditions": [
+                          {
+                            "field": "http-header",
+                            "values": [
+                              "2.13.0"
+                            ],
+                            "http_header_name": "version"
+                          }
+                        ],
+                        "tags": {
+                          "name": "version_rule"
+                        }
                     }
                 },
                 {
-                    "displayname": "Load Balancer Listener Tags",
-                    "notes": "Add the \"tags\" parameter with a dictionary to add tags to the listener.",
+                    "displayname": "Listener Rule with Complex Conditions and Multiple Tags",
+                    "notes": "This rule adds multiple conditions that must be matched to route traffic to the target group. Multiple non-name tags are also demonstrated.",
                     "definition": {
-                        "type": "&alb.listener",
-                        "certificate_arn": "arn:aws:acm:us-east-1:1234567890:certificate/CERTIFICATEIDVALUE",
-                        "load_balancer_arn": "&load_balancer:props.arn",
+                        "type": "&alb.rule",
                         "target_group_arn": "&target_group:props.arn",
+                        "listener_arn": "&listener:props.arn",
+                        "priority": 3,
+                        "conditions": [
+                          {
+                            "field": "http-request-method",
+                            "values": [
+                              "GET"
+                            ]
+                          },
+                          {
+                            "field": "source-ip",
+                            "values": [
+                              "10.0.0.123/16"
+                            ]
+                          },
+                          {
+                            "field": "host-header",
+                            "values": [
+                              "*.example.com"
+                            ]
+                          },
+                          {
+                            "field": "path-pattern",
+                            "values": [
+                              "/test/*"
+                            ]
+                          },
+                          {
+                            "field": "query-string",
+                            "values": [
+                              {
+                                "test42": "test42"
+                              }
+                            ]
+                          }
+                        ],
                         "tags": {
-                            "service": "user_service",
-                            "team": "applications"
+                          "name": "complex_rule",
+                          "service": "user_service",
+                          "team": "applications"
                         }
                     }
                 }
