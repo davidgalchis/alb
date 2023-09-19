@@ -427,17 +427,37 @@ def create_rule(attributes, region, prev_state):
 
         eh.add_log("Created Listener Rule", rule)
         eh.add_state({"rule_arn": rule.get("RuleArn"), "region": region})
-        eh.add_props({
+        props_to_add = {
             "arn": rule.get("ListenerArn"),
             "listener_arn": rule.get("ListenerArn"),
             "conditions": formatted_conditions_to_conditions(rule.get("Conditions")),
             "priority": rule.get("Priority"),
             "action_type": rule.get("Actions", [{}])[0].get("Type"),
             "target_group_arn": rule.get("Actions", [{}])[0].get("TargetGroupArn"),
-        })
+        }
+        eh.add_props(props_to_add)
         eh.add_links({"Rule": gen_rule_link(region, rule_arn=rule.get("RuleArn"))})
 
         ### Once the listener rule exists, then setup any followup tasks
+
+        populated_existing_attributes = remove_none_attributes(existing_props)
+        current_attributes = remove_none_attributes({
+            "ListenerArn": str(populated_existing_attributes.get("listener_arn")) if populated_existing_attributes.get("listener_arn") else populated_existing_attributes.get("listener_arn"),
+            "Priority": int(populated_existing_attributes.get("priority")) if populated_existing_attributes.get("priority") else str(populated_existing_attributes.get("priority")),
+            "Conditions": conditions_to_formatted_conditions(reformatted_conditions) if reformatted_conditions else None,
+            "Actions": [{
+                "Type": str(populated_existing_attributes.get("action_type")) if populated_existing_attributes.get("action_type") else populated_existing_attributes.get("action_type"),
+                "TargetGroupArn": str(populated_existing_attributes.get("target_group_arn")) if populated_existing_attributes.get("target_group_arn") else populated_existing_attributes.get("target_group_arn"),
+            }]
+        })
+
+        comparable_attributes = {i:attributes[i] for i in attributes if i not in ['Tags', 'Priority']}
+        comparable_current_attributes = {i:current_attributes[i] for i in current_attributes if i not in ['Tags', 'Priority']}
+        if comparable_attributes != comparable_current_attributes:
+            eh.add_op("update_rule")
+
+        if attributes.get("Priority") != current_attributes.get("Priority"):
+            eh.add_op("update_rule_priority")
 
         try:
             # Try to get the current tags
