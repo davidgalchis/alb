@@ -121,7 +121,7 @@ def conditions_to_formatted_conditions(conditions):
             formatted_conditions.append({
                 'Field': item.get("field"),
                 'QueryStringConfig': {
-                    'Values': expand_dict_to_key_value_list_obj(item.get("values")) 
+                    'Values': expand_list_dict_to_key_value_list_obj(item.get("values")) 
                     # [{"Key": f"{key}", "Value": f"{value}"} for key, value in item.get("values").items()]
                 }
             })
