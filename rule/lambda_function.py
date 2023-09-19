@@ -212,7 +212,7 @@ def lambda_handler(event, context):
         # Removing advanced rule functionality until a customer needs it.
         tags = cdef.get('tags') # this is converted to a [{"Key": key, "Value": value} , ...] format
 
-        formatted_conditions = conditions_to_formatted_conditions(conditions)
+        formatted_conditions = conditions_to_formatted_conditions(conditions, value_as_str=False)
 
         # remove any None values from the attributes dictionary
         attributes = {}
@@ -225,7 +225,7 @@ def lambda_handler(event, context):
                 "Type": str(action_type) if action_type else action_type,
                 "TargetGroupArn": str(target_group_arn) if target_group_arn else target_group_arn,
             }],
-            "Tags": expand_list_dict_to_key_value_list_obj(tags) if tags else None
+            "Tags": expand_dict_to_key_value_list_obj(tags) if tags else None
             # [{"Key": f"{key}", "Value": f"{value}"} for key, value in tags.items()] if tags else None
         })
 
@@ -370,13 +370,15 @@ def get_rule(attributes, region, prev_state):
                     if len(relevant_items) > 0:
                         relevant_item = relevant_items[0]
                         if relevant_item.get("Tags"):
-                            current_tags = {item.get("Key") : item.get("Value") for item in relevant_item.get("Tags")}
+                            current_tags = key_value_list_obj_to_compressed_dict(relevant_item.get("Tags"))
+                            # {item.get("Key") : item.get("Value") for item in relevant_item.get("Tags")}
 
                     # If there are tags specified, figure out which ones need to be added and which ones need to be removed
                     if attributes.get("Tags"):
 
                         tags = attributes.get("Tags")
-                        formatted_tags = {item.get("Key") : item.get("Value") for item in tags}
+                        formatted_tags = key_value_list_obj_to_compressed_dict(tags)
+                        # {item.get("Key") : item.get("Value") for item in tags}
                         # Compare the current tags to the desired tags
                         if formatted_tags != current_tags:
                             remove_tags = [k for k in current_tags.keys() if k not in formatted_tags]
@@ -448,13 +450,15 @@ def create_rule(attributes, region, prev_state):
             if len(relevant_items) > 0:
                 relevant_item = relevant_items[0]
                 if relevant_item.get("Tags"):
-                    current_tags = {item.get("Key") : item.get("Value") for item in relevant_item.get("Tags")}
+                    current_tags = key_value_list_obj_to_compressed_dict(relevant_item.get("Tags"))
+                    # {item.get("Key") : item.get("Value") for item in relevant_item.get("Tags")}
 
             # If there are tags specified, figure out which ones need to be added and which ones need to be removed
             if attributes.get("Tags"):
 
                 tags = attributes.get("Tags")
-                formatted_tags = {item.get("Key") : item.get("Value") for item in tags}
+                formatted_tags = key_value_list_obj_to_compressed_dict(tags)
+                # {item.get("Key") : item.get("Value") for item in tags}
                 # Compare the current tags to the desired tags
                 if formatted_tags != current_tags:
                     remove_tags = [k for k in current_tags.keys() if k not in formatted_tags]
