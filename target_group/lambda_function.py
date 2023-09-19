@@ -673,11 +673,7 @@ def register_targets():
     print(target_group_arn)
     payload = {
         "TargetGroupArn": target_group_arn,
-        "Targets":[ {
-            "Id": "10.0.5.199",
-            "Port": 443,
-            "AvailabilityZone": "all"
-        },]
+        "Targets":targets
     }
     print(payload)
     try:

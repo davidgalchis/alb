@@ -52,6 +52,129 @@ def safe_cast(val, to_type, default=None):
         return to_type(val)
     except (ValueError, TypeError):
         return default
+    
+def expand_list_dict_to_key_value_list_obj(list_obj, key_as_str=True, value_as_str=True):
+    return [{
+            "Key": f"{key}" if key_as_str else key, 
+            "Value": f"{item.get(key)}" if value_as_str else item.get(key)
+        } 
+        for item in list_obj 
+            for key in item
+    ]
+
+def expand_dict_to_key_value_list_obj(obj, key_as_str=True, value_as_str=True):
+    return [{
+            "Key": f"{key}" if key_as_str else key, 
+            "Value": f"{value}" if value_as_str else value
+        } 
+        for key, value in obj.items()
+    ]
+
+def key_value_list_obj_to_compressed_list_dict(list_obj, key_as_str=True, value_as_str=True):
+    return [{
+        f'{item.get("Key")}' if key_as_str else item.get("Key"): 
+        f'{item.get("Value")}' if value_as_str else item.get("Value")} 
+        for item in list_obj
+    ]
+
+def key_value_list_obj_to_compressed_dict(list_obj, key_as_str=True, value_as_str=True):
+    return {
+        f'{item.get("Key")}' if key_as_str else item.get("Key"): 
+        f'{item.get("Value")}' if value_as_str else item.get("Value")
+        for item in list_obj
+    }
+
+def conditions_to_formatted_conditions(conditions):
+    # Take conditions and convert them into the mass of config sections that the calls actually use
+    formatted_conditions = []
+    for item in conditions:
+        if item.get("field") == "http-header":
+            formatted_conditions.append({
+                'Field': item.get("field"),
+                'HttpHeaderConfig': {
+                    'HttpHeaderName': item.get("http_header_name"),
+                    'Values': item.get("values")
+                }
+            })
+        elif item.get("field") == "http-request-method":
+            formatted_conditions.append({
+                'Field': item.get("field"),
+                'HttpRequestMethodConfig': {
+                    'Values': item.get("values")
+                }
+            })
+        elif item.get("field") == "host-header":
+            formatted_conditions.append({
+                'Field': item.get("field"),
+                'HostHeaderConfig': {
+                    'Values': item.get("values")
+                }
+            })
+        elif item.get("field") == "path-pattern":
+            formatted_conditions.append({
+                'Field': item.get("field"),
+                'PathPatternConfig': {
+                    'Values': item.get("values")
+                }
+            })
+        elif item.get("field") == "query-string":
+            formatted_conditions.append({
+                'Field': item.get("field"),
+                'QueryStringConfig': {
+                    'Values': expand_dict_to_key_value_list_obj(item.get("values")) 
+                    # [{"Key": f"{key}", "Value": f"{value}"} for key, value in item.get("values").items()]
+                }
+            })
+        elif item.get("field") == "source-ip":
+            formatted_conditions.append({
+                'Field': item.get("field"),
+                'SourceIpConfig': {
+                    'Values': item.get("values")
+                }
+            })
+        else:
+            pass
+    return formatted_conditions
+
+def formatted_conditions_to_conditions(formatted_conditions):
+    conditions = []
+    for item in formatted_conditions:
+        item_field = item.get("Field")
+        if item_field == "http-header":
+            conditions.append({
+                'field': item_field,
+                'values': item.get("HttpHeaderConfig", {}).get("Values"),
+                'http_header_name': item.get("HttpHeaderConfig", {}).get("HttpHeaderName")
+            })
+        elif item_field == "http-request-method":
+            conditions.append({
+                'field': item_field,
+                'values': item.get("HttpRequestMethodConfig", {}).get("Values"),
+            })
+        elif item_field == "host-header":
+            conditions.append({
+                'field': item_field,
+                'values': item.get("HostHeaderConfig", {}).get("Values")
+            })
+        elif item_field == "path-pattern":
+            conditions.append({
+                'field': item_field,
+                'values': item.get("PathPatternConfig", {}).get("Values")
+            })
+        elif item_field == "query-string":
+            conditions.append({
+                'field': item_field,
+                'values': key_value_list_obj_to_compressed_list_dict(item.get("QueryStringConfig", {}).get("Values"))
+            })
+        elif item_field == "source-ip":
+            conditions.append({
+                'field': item_field,
+                'values': item.get("SourceIpConfig", {}).get("Values")
+            })
+        else:
+            pass
+    return conditions
+
 
 def lambda_handler(event, context):
     try:
@@ -89,75 +212,21 @@ def lambda_handler(event, context):
         # Removing advanced rule functionality until a customer needs it.
         tags = cdef.get('tags') # this is converted to a [{"Key": key, "Value": value} , ...] format
 
-
-        # Take conditions and convert them into the mass of config sections that the calls actually use
-        formatted_conditions = []
-        for item in conditions:
-            if item.get("field") == "http-header":
-                formatted_conditions.append({
-                    'Field': item.get("field"),
-                    'HttpHeaderConfig': {
-                        'HttpHeaderName': item.get("http_header_name"),
-                        'Values': item.get("values")
-                    }
-                })
-            elif item.get("field") == "http-request-method":
-                formatted_conditions.append({
-                    'Field': item.get("field"),
-                    'HttpRequestMethodConfig': {
-                        'Values': item.get("values")
-                    }
-                })
-            elif item.get("field") == "host-header":
-                formatted_conditions.append({
-                    'Field': item.get("field"),
-                    'HostHeaderConfig': {
-                        'Values': item.get("values")
-                    }
-                })
-            elif item.get("field") == "host-header":
-                formatted_conditions.append({
-                    'Field': item.get("field"),
-                    'HostHeaderConfig': {
-                        'Values': item.get("values")
-                    }
-                })
-            elif item.get("field") == "path-pattern":
-                formatted_conditions.append({
-                    'Field': item.get("field"),
-                    'PathPatternConfig': {
-                        'Values': item.get("values")
-                    }
-                })
-            elif item.get("field") == "query-string":
-                formatted_conditions.append({
-                    'Field': item.get("field"),
-                    'QueryStringConfig': {
-                        'Values': item.get("values")
-                    }
-                })
-            elif item.get("field") == "source-ip":
-                formatted_conditions.append({
-                    'Field': item.get("field"),
-                    'SourceIpConfig': {
-                        'Values': item.get("values")
-                    }
-                })
-            else:
-                pass
+        formatted_conditions = conditions_to_formatted_conditions(conditions)
 
         # remove any None values from the attributes dictionary
         attributes = {}
         
         remove_none_attributes({
             "ListenerArn": str(listener_arn) if listener_arn else listener_arn,
-            "Conditions": formatted_conditions,
+            "Conditions": formatted_conditions if formatted_conditions else None,
             "Priority": int(priority) if priority else priority,
             "Actions": [{
                 "Type": str(action_type) if action_type else action_type,
                 "TargetGroupArn": str(target_group_arn) if target_group_arn else target_group_arn,
             }],
-            "Tags": [{"Key": f"{key}", "Value": f"{value}"} for key, value in tags.items()] if tags else None
+            "Tags": expand_list_dict_to_key_value_list_obj(tags) if tags else None
+            # [{"Key": f"{key}", "Value": f"{value}"} for key, value in tags.items()] if tags else None
         })
 
         ### DECLARE STARTING POINT
@@ -241,42 +310,42 @@ def lambda_handler(event, context):
 def get_rule(attributes, region, prev_state):
     client = boto3.client("elbv2")
     
-    existing_listener_arn = prev_state.get("props", {}).get("arn")
+    existing_rule_arn = prev_state.get("props", {}).get("arn")
+    existing_listener_arn = prev_state.get("props", {}).get("listener_arn")
 
-    if existing_listener_arn:
-        # Try to get the listener. If you succeed, record the props and links from the current listener
+    if existing_rule_arn:
+        # Try to get the rule. If you succeed, record the props and links from the current rule
         try:
-            response = client.describe_listeners(
-                ListenerArns=[existing_listener_arn]
+            response = client.describe_rules(
+                RuleArns=[existing_rule_arn]
                 )
-            listener_to_use = None
-            if response and response.get("Listeners") and len(response.get("Listeners")) > 0:
-                eh.add_log("Got Listener Attributes", response)
-                listener_to_use = response.get("Listeners")[0]
-                listener_arn = listener_to_use.get("ListenerArn")
-                eh.add_state({"listener_arn": listener_to_use.get("ListenerArn"), "region": region})
+            rule_to_use = None
+            if response and response.get("Rules") and len(response.get("Rules")) > 0:
+                eh.add_log("Got Rule Attributes", response)
+                rule_to_use = response.get("Rules")[0]
+                rule_arn = rule_to_use.get("RuleArn")
+                eh.add_state({"rule_arn": rule_to_use.get("RuleArn"), "region": region})
+
+                reformatted_conditions = formatted_conditions_to_conditions(rule_to_use.get("Conditions"))
+
                 existing_props = {
-                    "arn": listener_to_use.get("ListenerArn"),
-                    "listener_arn": listener_to_use.get("ListenerArn"),
-                    "port": listener_to_use.get("Port"),
-                    "protocol": listener_to_use.get("Protocol"),
-                    "action_type": listener_to_use.get("DefaultActions", [{}])[0].get("Type"),
-                    "target_group_arn": listener_to_use.get("DefaultActions", [{}])[0].get("TargetGroupArn"),
-                    "ssl_policy": listener_to_use.get("SslPolicy"),
-                    "certificate_arn": listener_to_use.get("Certificates", [{}])[0].get("CertificateArn")
+                    "arn": rule_to_use.get("RuleArn"),
+                    "listener_arn": existing_listener_arn,
+                    "priority": rule_to_use.get("Priority"),
+                    "conditions": reformatted_conditions,
+                    "action_type": rule_to_use.get("Actions", [{}])[0].get("Type"),
+                    "target_group_arn": rule_to_use.get("Actions", [{}])[0].get("TargetGroupArn"),
                 }
                 eh.add_props(existing_props)
-                eh.add_links({"Listener": gen_listener_link(region, listener_arn=listener_to_use.get("ListenerArn"), port=listener_to_use.get("Port"))})
+                eh.add_links({"Rule": gen_rule_link(region, rule_arn=rule_to_use.get("RuleArn"))})
 
                 ### If the listener exists, then setup any followup tasks
                 populated_existing_attributes = remove_none_attributes(existing_props)
                 current_attributes = remove_none_attributes({
                     "ListenerArn": str(populated_existing_attributes.get("listener_arn")) if populated_existing_attributes.get("listener_arn") else populated_existing_attributes.get("listener_arn"),
-                    "Protocol": str(populated_existing_attributes.get("protocol")) if populated_existing_attributes.get("protocol") else str(populated_existing_attributes.get("protocol")),
-                    "Port": int(populated_existing_attributes.get("port")) if populated_existing_attributes.get("port") else populated_existing_attributes.get("port"),
-                    "SslPolicy": str(populated_existing_attributes.get("ssl_policy")) if populated_existing_attributes.get("ssl_policy") else str(populated_existing_attributes.get("ssl_policy")),
-                    "Certificates": [{"CertificateArn": populated_existing_attributes.get("certificate_arn") }] if populated_existing_attributes.get("certificate_arn") else None,
-                    "DefaultActions": [{
+                    "Priority": int(populated_existing_attributes.get("priority")) if populated_existing_attributes.get("priority") else str(populated_existing_attributes.get("priority")),
+                    "Conditions": conditions_to_formatted_conditions(reformatted_conditions) if reformatted_conditions else None,
+                    "Actions": [{
                         "Type": str(populated_existing_attributes.get("action_type")) if populated_existing_attributes.get("action_type") else populated_existing_attributes.get("action_type"),
                         "TargetGroupArn": str(populated_existing_attributes.get("target_group_arn")) if populated_existing_attributes.get("target_group_arn") else populated_existing_attributes.get("target_group_arn"),
                     }]
@@ -288,9 +357,9 @@ def get_rule(attributes, region, prev_state):
 
                 try:
                     # Try to get the current tags
-                    response = client.describe_tags(ResourceArns=[listener_arn])
+                    response = client.describe_tags(ResourceArns=[rule_arn])
                     eh.add_log("Got Tags")
-                    relevant_items = [item for item in response.get("TagDescriptions") if item.get("ResourceArn") == listener_arn]
+                    relevant_items = [item for item in response.get("TagDescriptions") if item.get("ResourceArn") == rule_arn]
                     current_tags = {}
 
                     # Parse out the current tags
@@ -318,26 +387,26 @@ def get_rule(attributes, region, prev_state):
                             eh.add_op("remove_tags", list(current_tags.keys()))
 
                 # If the load balancer does not exist, some wrong has happened. Probably don't permanently fail though, try to continue.
-                except client.exceptions.ListenerNotFoundException:
-                    eh.add_log("Listener Not Found", {"arn": listener_arn})
+                except client.exceptions.RuleNotFoundException:
+                    eh.add_log("Listener Rule Not Found", {"arn": rule_arn})
                     pass
 
             else:
-                eh.add_log("Listener Does Not Exist", {"listener_arn": existing_listener_arn})
+                eh.add_log("Listener Rule Does Not Exist", {"listener_arn": existing_rule_arn})
                 eh.add_op("create_rule")
                 return 0
         # If there is no listener and there is an exception handle it here
-        except client.exceptions.ListenerNotFoundException:
-            eh.add_log("Listener Does Not Exist", {"listener_arn": existing_listener_arn})
+        except client.exceptions.RuleNotFoundException:
+            eh.add_log("Listener Rule Does Not Exist", {"rule_arn": existing_rule_arn})
             eh.add_op("create_rule")
             return 0
         except ClientError as e:
             print(str(e))
-            eh.add_log("Get Listener Error", {"error": str(e)}, is_error=True)
-            eh.retry_error("Get Listener Error", 10)
+            eh.add_log("Get Listener Rule Error", {"error": str(e)}, is_error=True)
+            eh.retry_error("Get Listener Rule Error", 10)
             return 0
     else:
-        eh.add_log("Listener Does Not Exist", {"listener_arn": existing_listener_arn})
+        eh.add_log("Listener Rule Does Not Exist", {"rule_arn": existing_rule_arn})
         eh.add_op("create_rule")
         return 0
 
@@ -347,30 +416,28 @@ def create_rule(attributes, region, prev_state):
 
     try:
         response = client.create_rule(**attributes)
-        listener = response.get("Listeners")[0]
-        listener_arn = listener.get("ListenerArn")
+        rule = response.get("Rules")[0]
+        rule_arn = rule.get("RuleArn")
 
-        eh.add_log("Created Listener", listener)
-        eh.add_state({"listener_arn": listener.get("ListenerArn"), "region": region})
+        eh.add_log("Created Listener Rule", rule)
+        eh.add_state({"rule_arn": rule.get("RuleArn"), "region": region})
         eh.add_props({
-            "arn": listener.get("ListenerArn"),
-            "listener_arn": listener.get("ListenerArn"),
-            "port": listener.get("Port"),
-            "protocol": listener.get("Protocol"),
-            "action_type": listener.get("DefaultActions", [{}])[0].get("Type"),
-            "target_group_arn": listener.get("DefaultActions", [{}])[0].get("TargetGroupArn"),
-            "ssl_policy": listener.get("SslPolicy"),
-            "certificate_arn": listener.get("Certificates", [{}])[0].get("CertificateArn")
+            "arn": rule.get("ListenerArn"),
+            "listener_arn": rule.get("ListenerArn"),
+            "conditions": formatted_conditions_to_conditions(rule.get("Conditions")),
+            "priority": rule.get("Priority"),
+            "action_type": rule.get("Actions", [{}])[0].get("Type"),
+            "target_group_arn": rule.get("Actions", [{}])[0].get("TargetGroupArn"),
         })
-        eh.add_links({"Listener": gen_listener_link(region, listener_arn=listener.get("ListenerArn"), port=listener.get("Port"))})
+        eh.add_links({"Rule": gen_rule_link(region, rule_arn=rule.get("RuleArn"))})
 
         ### Once the listener exists, then setup any followup tasks
 
         try:
             # Try to get the current tags
-            response = client.describe_tags(ResourceArns=[listener_arn])
+            response = client.describe_tags(ResourceArns=[rule_arn])
             eh.add_log("Got Tags")
-            relevant_items = [item for item in response.get("TagDescriptions") if item.get("ResourceArn") == listener_arn]
+            relevant_items = [item for item in response.get("TagDescriptions") if item.get("ResourceArn") == rule_arn]
             current_tags = {}
 
             # Parse out the current tags
@@ -399,7 +466,7 @@ def create_rule(attributes, region, prev_state):
 
         # If the load balancer does not exist, some wrong has happened. Probably don't permanently fail though, try to continue.
         except client.exceptions.ListenerNotFoundException:
-            eh.add_log("Listener Not Found", {"arn": listener_arn})
+            eh.add_log("Rule Not Found", {"arn": rule_arn})
             pass
 
     except client.exceptions.DuplicateListenerException as e:
@@ -522,7 +589,7 @@ def update_rule(attributes, region, prev_state):
             "certificate_arn": listener.get("Certificates", [{}])[0].get("CertificateArn")
         }
         eh.add_props(existing_props)
-        eh.add_links({"Listener": gen_listener_link(region, listener_arn=listener.get("ListenerArn"), port=listener.get("Port"))})
+        eh.add_links({"Rule": gen_rule_link(region, rule_arn=listener.get("RuleArn"))})
 
     except client.exceptions.ListenerNotFoundException as e:
         eh.add_log("Listener Does Not Exist", {"error": str(e)}, is_error=True)
@@ -606,7 +673,7 @@ def delete_rule():
 
 
 
-def gen_listener_link(region, listener_arn, port):
-    return f"https://{region}.console.aws.amazon.com/ec2/home?region={region}#ELBListenerV2:loadBalancerArn={listener_arn};listenerPort={port}"
+def gen_rule_link(region, rule_arn):
+    return f"https://{region}.console.aws.amazon.com/ec2/home?region={region}#ListenerRuleDetails:ruleArn={rule_arn}"
 
 
