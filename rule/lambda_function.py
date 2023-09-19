@@ -568,7 +568,7 @@ def set_tags():
 
 @ext(handler=eh, op="update_rule")
 def update_rule(attributes, region, prev_state):
-    modifiable_attributes = {i:attributes[i] for i in attributes if i not in ['Tags', "ListenerArn"]}
+    modifiable_attributes = {i:attributes[i] for i in attributes if i not in ['Tags', "ListenerArn", "Priority"]}
     # modifiable_attributes["ListenerArn"] = eh.state["listener_arn"]
     try:
         response = client.modify_rule(**modifiable_attributes)
