@@ -217,7 +217,7 @@ def lambda_handler(event, context):
         # remove any None values from the attributes dictionary
         attributes = {}
         
-        remove_none_attributes({
+        attributes = remove_none_attributes({
             "ListenerArn": str(listener_arn) if listener_arn else listener_arn,
             "Conditions": formatted_conditions if formatted_conditions else None,
             "Priority": int(priority) if priority else priority,
