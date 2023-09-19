@@ -212,7 +212,7 @@ def lambda_handler(event, context):
         # Removing advanced rule functionality until a customer needs it.
         tags = cdef.get('tags') # this is converted to a [{"Key": key, "Value": value} , ...] format
 
-        formatted_conditions = conditions_to_formatted_conditions(conditions, value_as_str=False)
+        formatted_conditions = conditions_to_formatted_conditions(conditions)
 
         # remove any None values from the attributes dictionary
         attributes = {}
