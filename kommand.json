@@ -581,6 +581,26 @@
                     }
                 },
                 {
+                    "displayname": "Application Load Balancer Target Group routing traffic to specific IP Addresses",
+                    "notes": "Add IPs that your Target Group will route traffic to.",
+                    "definition": {
+                        "type": "&alb_target_group.target_group",
+                        "vpc_id": "vpc-examplevpcid",
+                        "targets": [
+                            {
+                                "availability_zone": "us-east-1a",
+                                "id": "IP_YOU_ARE_TARGETING",
+                                "port": 443
+                            },
+                            {
+                                "availability_zone": "us-east-1b",
+                                "id": "IP_YOU_ARE_TARGETING",
+                                "port": 443
+                            }
+                        ]
+                    }
+                },
+                {
                     "displayname": "Application Load Balancer Target Group with Tags",
                     "notes": "Add the \"tags\" parameter with a dictionary to add tags to the target group.",
                     "definition": {
