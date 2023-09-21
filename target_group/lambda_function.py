@@ -534,7 +534,11 @@ def create_target_group(attributes, targets, special_attributes, default_special
         if prev_targets:
             prev_targets_comparable = [f"{item.get('Id')}${item.get('Port', '')}${item.get('AvailabilityZone', '')}" for item in prev_targets]
 
-        prev_targets_to_remove = [prev_target.split("$")[0] for prev_target in prev_targets_comparable if prev_target not in targets_comparable]
+        prev_targets_to_remove = [remove_none_attributes({ \
+            "Id": prev_target.split("$")[0], \
+            "Port": safe_cast(prev_target.split("$")[1], int, prev_target.split("$")[1]) or None, \
+            "AvailabilityZone": prev_target.split("$")[2] or None \
+            }) for prev_target in prev_targets_comparable if prev_target not in targets_comparable]
         targets_to_add = [remove_none_attributes({ \
             "Id": def_target.split("$")[0], \
             "Port": safe_cast(def_target.split("$")[1], int, def_target.split("$")[1]) or None, \
@@ -713,12 +717,12 @@ def register_targets():
 def deregister_targets():
 
     targets = eh.ops.get("deregister_targets")
-    formatted_targets = [{"Id": item} for item in targets]
+    # formatted_targets = [{"Id": item} for item in targets]
     target_group_arn = eh.state["target_group_arn"]
     try:
         response = client.deregister_targets(
             TargetGroupArn=target_group_arn,
-            Targets=formatted_targets
+            Targets=targets
         )
         eh.add_log("Targets Deregistered", response)
     except client.exceptions.TargetGroupNotFoundException as e:
