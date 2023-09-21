@@ -390,7 +390,7 @@ def get_target_group(name, attributes, targets, special_attributes, default_spec
                 "protocol_version": target_group_to_use.get("ProtocolVersion"),
                 "target_type": target_group_to_use.get("TargetType"),
                 "ip_address_type": target_group_to_use.get("IpAddressType"),
-                "targets": prev_state.get("def", {}).get("targets")
+                "targets": targets
             })
             eh.add_links({"Target Group": gen_target_group_link(region, target_group_arn)})
 
