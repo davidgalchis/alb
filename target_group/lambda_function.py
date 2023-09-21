@@ -398,22 +398,28 @@ def get_target_group(name, attributes, targets, special_attributes, default_spec
 
             # Figure out what targets needs to be removed and added and setup those actions
             prev_targets = prev_state.get("props", {}).get("targets")
+            print(prev_targets)
 
             targets_comparable = []
             if targets:
                 targets_comparable = [f"{item.get('Id')}${item.get('Port', '')}${item.get('AvailabilityZone', '')}" for item in targets]
-
+            print(targets_comparable)
             prev_targets_comparable= []
             if prev_targets:
                 prev_targets_comparable = [f"{item.get('Id')}${item.get('Port', '')}${item.get('AvailabilityZone', '')}" for item in prev_targets]
-
-            prev_targets_to_remove = [prev_target.split("$")[0] for prev_target in prev_targets_comparable if prev_target not in targets_comparable]
+            print(prev_targets_comparable)
+            prev_targets_to_remove = [remove_none_attributes({ \
+                "Id": prev_target.split("$")[0], \
+                "Port": safe_cast(prev_target.split("$")[1], int, prev_target.split("$")[1]) or None, \
+                "AvailabilityZone": prev_target.split("$")[2] or None \
+                }) for prev_target in prev_targets_comparable if prev_target not in targets_comparable]
             targets_to_add = [remove_none_attributes({ \
                 "Id": def_target.split("$")[0], \
                 "Port": safe_cast(def_target.split("$")[1], int, def_target.split("$")[1]) or None, \
                 "AvailabilityZone": def_target.split("$")[2] or None \
                 }) for def_target in targets_comparable if def_target not in prev_targets_comparable]
-            
+            print(prev_targets_to_remove)
+            print(targets_to_add)
             if targets_to_add:
                 eh.add_op("register_targets", targets_to_add)
             if prev_targets_to_remove:
