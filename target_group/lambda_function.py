@@ -335,6 +335,7 @@ def lambda_handler(event, context):
         remove_tags()
         set_tags()
         register_targets()
+        deregister_targets()
         update_target_group(attributes)
         update_target_group_special_attributes()
         reset_target_group_special_attributes(default_special_attributes)
